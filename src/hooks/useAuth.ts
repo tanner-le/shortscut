@@ -3,22 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
+import { mockApi, User } from '@/lib/mock-api';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+// Determine if we should use the mock API
+const USE_MOCK_API = process.env.NEXT_PUBLIC_API_URL ? false : true;
 
 interface LoginCredentials {
   email: string;
   password: string;
-}
-
-interface AuthResponse {
-  user: User;
-  token: string;
 }
 
 export function useAuth() {
@@ -41,8 +33,16 @@ export function useAuth() {
   const fetchUser = async () => {
     setIsLoading(true);
     try {
-      const userData = await apiClient.get<{ user: User }>('/api/auth/me');
-      setUser(userData.user);
+      let userData: User;
+      
+      if (USE_MOCK_API) {
+        userData = await mockApi.getCurrentUser();
+      } else {
+        const response = await apiClient.get<{ user: User }>('/api/auth/me');
+        userData = response.user;
+      }
+      
+      setUser(userData);
       setError(null);
     } catch (err) {
       console.error('Failed to fetch user:', err);
@@ -53,15 +53,21 @@ export function useAuth() {
   };
 
   // Login user
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const authData = await apiClient.post<AuthResponse>('/api/auth/login', credentials);
-      localStorage.setItem('token', authData.token);
-      setUser(authData.user);
-      router.push('/dashboard');
-      return true;
+      if (USE_MOCK_API) {
+        const authData = await mockApi.login(email, password);
+        localStorage.setItem('token', authData.token);
+        setUser(authData.user);
+        return true;
+      } else {
+        const authData = await apiClient.post('/api/auth/login', { email, password });
+        localStorage.setItem('token', authData.token);
+        setUser(authData.user);
+        return true;
+      }
     } catch (err: any) {
       setError(err.message || 'Login failed');
       return false;
