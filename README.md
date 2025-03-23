@@ -119,28 +119,41 @@ This project is proprietary and confidential.
 - Styled with Tailwind CSS
 - State managed with Redux Toolkit
 
-## Database Setup
+## Database Setup with Supabase
 
-This project uses PostgreSQL with Prisma ORM for data management. Follow these steps to set up the database:
+This project uses PostgreSQL with Prisma ORM for data management, hosted on Supabase. Follow these steps to set up your database:
 
-1. **Create a PostgreSQL Database**
-   - You can use a cloud provider like [Supabase](https://supabase.com/), [Railway](https://railway.app/), or [Neon](https://neon.tech/)
-   - Create a new PostgreSQL database and copy the connection string
+1. **Create a Supabase Account and Project**
+   - Go to [Supabase](https://supabase.com/) and sign up for an account
+   - Create a new project with a PostgreSQL database
+   - Set a secure database password and note it down
 
-2. **Configure Environment Variables**
-   - Update the `.env` file with your database connection string:
+2. **Get Your Database Connection String**
+   - In your Supabase dashboard, go to Project Settings > Database
+   - Find and copy the connection string (URI format)
+   - It should look like: `postgresql://postgres:[YOUR-PASSWORD]@db.abcdefghijkl.supabase.co:5432/postgres`
+   - Replace `[YOUR-PASSWORD]` with the database password you set
+
+3. **Configure Environment Variables**
+   - Copy `.env.example` to `.env`
+   - Update the `.env` file with your Supabase connection string:
    ```
-   DATABASE_URL="postgresql://username:password@hostname:port/database?schema=public"
-   JWT_SECRET="your-secret-key-here"
+   DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@YOUR_PROJECT_HOST.supabase.co:5432/postgres"
+   JWT_SECRET="your-generated-jwt-secret"
    ```
+   - Generate a secure JWT secret using: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
-3. **Apply Database Migrations**
+4. **Apply Database Migrations**
    - Run `npx prisma migrate dev --name init` to create the database tables
    - This will create all necessary tables based on the schema defined in `prisma/schema.prisma`
 
-4. **Seed the Database (Optional)**
-   - Run `npx prisma db seed` to populate the database with initial data
-   - The seed script is defined in the `prisma/seed.ts` file
+5. **Seed the Database**
+   - Run `npm run db:seed` to populate the database with initial data
+   - The seed script creates test users, clients, and contracts
+
+6. **Explore Your Database (Optional)**
+   - Use Prisma Studio to view and edit your data: `npx prisma studio`
+   - Or access your data directly through the Supabase dashboard
 
 ## Database Schema
 
