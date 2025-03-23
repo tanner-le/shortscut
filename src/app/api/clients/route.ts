@@ -1,12 +1,29 @@
 import { NextRequest } from 'next/server';
-import { db } from '@/lib/db';
 import { successResponse, errorResponse, HTTP_STATUS } from '@/lib/api-utils';
-import { Client } from '@/types';
+import { prisma } from '@/lib/prisma';
 
 // GET /api/clients - Get all clients
 export async function GET(request: NextRequest) {
   try {
-    const clients = db.clients.getAll();
+    // Parse query parameters
+    const url = new URL(request.url);
+    const status = url.searchParams.get('status');
+    
+    // Build query filters
+    const where: any = {};
+    
+    if (status) {
+      if (status === 'active' || status === 'inactive') {
+        where.status = status;
+      }
+    }
+    
+    // Fetch clients with Prisma
+    const clients = await prisma.client.findMany({
+      where,
+      orderBy: { createdAt: 'desc' }
+    });
+    
     return successResponse(clients, 'Clients retrieved successfully');
   } catch (error) {
     console.error('Error retrieving clients:', error);
@@ -28,13 +45,27 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if email is already in use
-    const existingClient = db.clients.getAll().find(client => client.email === body.email);
+    const existingClient = await prisma.client.findFirst({
+      where: { email: body.email }
+    });
+    
     if (existingClient) {
       return errorResponse('Email is already in use', HTTP_STATUS.CONFLICT);
     }
     
-    // Create new client
-    const newClient = db.clients.create(body as Omit<Client, 'id' | 'createdAt' | 'updatedAt'>);
+    // Create new client with Prisma
+    const newClient = await prisma.client.create({
+      data: {
+        name: body.name,
+        email: body.email,
+        phone: body.phone || null,
+        company: body.company,
+        industry: body.industry || null,
+        address: body.address || null,
+        notes: body.notes || null,
+        status: body.status
+      }
+    });
     
     return successResponse(newClient, 'Client created successfully');
   } catch (error) {
