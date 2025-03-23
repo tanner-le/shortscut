@@ -8,6 +8,8 @@ import { useContracts } from '@/hooks/useContracts';
 import { useClients } from '@/hooks/useClients';
 import LoadingState from '@/components/ui/LoadingState';
 import EmptyState from '@/components/ui/EmptyState';
+import { PACKAGES, PackageType } from '@/types/package';
+import { Contract } from '@/types';
 
 export default function ContractsPage() {
   const router = useRouter();
@@ -60,9 +62,29 @@ export default function ContractsPage() {
     );
   }
 
-  const getClientName = (clientId) => {
+  const getClientName = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     return client ? client.name : 'Unknown Client';
+  };
+  
+  const getPackageBadgeClass = (packageType: PackageType) => {
+    return packageType === 'creator' 
+      ? 'bg-blue-100 text-blue-800' 
+      : 'bg-purple-100 text-purple-800';
+  };
+  
+  const getPackageLabel = (packageType: PackageType) => {
+    const pkg = PACKAGES.find(p => p.type === packageType);
+    return pkg ? pkg.name : 'Unknown Package';
+  };
+  
+  const formatDate = (date: string | Date | undefined) => {
+    if (!date) return 'No end date';
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
   };
 
   if (!contracts || contracts.length === 0) {
@@ -167,13 +189,13 @@ export default function ContractsPage() {
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                     >
-                      Value
+                      Package
                     </th>
                     <th
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                     >
-                      Dates
+                      Due Date
                     </th>
                     <th scope="col" className="relative px-6 py-3">
                       <span className="sr-only">Actions</span>
@@ -194,25 +216,26 @@ export default function ContractsPage() {
                           className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
                             contract.status === 'active'
                               ? 'bg-green-100 text-green-800'
-                              : contract.status === 'pending'
+                              : contract.status === 'signed'
                               ? 'bg-yellow-100 text-yellow-800'
                               : contract.status === 'completed'
                               ? 'bg-blue-100 text-blue-800'
                               : 'bg-gray-100 text-gray-800'
                           }`}
                         >
-                          {contract.status}
+                          {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
-                        <div className="text-sm text-gray-900">${contract.value.toLocaleString()}</div>
+                        <span
+                          className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${getPackageBadgeClass(contract.packageType)}`}
+                        >
+                          {getPackageLabel(contract.packageType)}
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="text-sm text-gray-500">
-                          <div>Start: {new Date(contract.startDate).toLocaleDateString()}</div>
-                          {contract.endDate && (
-                            <div>End: {new Date(contract.endDate).toLocaleDateString()}</div>
-                          )}
+                          {contract.endDate ? formatDate(contract.endDate) : 'No end date'}
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">

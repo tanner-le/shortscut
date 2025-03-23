@@ -1,3 +1,5 @@
+import { PackageType } from './package';
+
 export interface User {
   id: string;
   name: string;
@@ -25,6 +27,7 @@ export interface Contract {
   id: string;
   title: string;
   clientId: string;
+  packageType: PackageType;
   startDate: Date;
   endDate?: Date;
   value: number;
