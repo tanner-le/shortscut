@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server';
-import { db } from '@/lib/db';
 import { successResponse, errorResponse, HTTP_STATUS } from '@/lib/api-utils';
-import { Contract } from '@/types';
+import { prisma } from '@/lib/prisma';
+
+// Valid contract status values
+const CONTRACT_STATUSES = ['draft', 'sent', 'signed', 'active', 'completed', 'cancelled'];
 
 // GET /api/contracts - Get all contracts
 export async function GET(request: NextRequest) {
@@ -11,17 +13,26 @@ export async function GET(request: NextRequest) {
     const clientId = url.searchParams.get('clientId');
     const status = url.searchParams.get('status');
     
-    let contracts = db.contracts.getAll();
+    // Build query filters
+    const where: any = {};
     
-    // Filter by client ID if provided
     if (clientId) {
-      contracts = contracts.filter(contract => contract.clientId === clientId);
+      where.clientId = clientId;
     }
     
-    // Filter by status if provided
     if (status) {
-      contracts = contracts.filter(contract => contract.status === status);
+      // Validate status is a valid contract status
+      if (CONTRACT_STATUSES.includes(status)) {
+        where.status = status;
+      }
     }
+    
+    // Fetch contracts with Prisma
+    const contracts = await prisma.contract.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: { client: true } // Include client data
+    });
     
     return successResponse(contracts, 'Contracts retrieved successfully');
   } catch (error) {
@@ -36,7 +47,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Simple validation
-    const requiredFields = ['title', 'clientId', 'startDate', 'value', 'status'];
+    const requiredFields = ['title', 'clientId', 'packageType', 'startDate', 'value', 'status'];
     for (const field of requiredFields) {
       if (!body[field]) {
         return errorResponse(`Missing required field: ${field}`, HTTP_STATUS.BAD_REQUEST);
@@ -44,13 +55,32 @@ export async function POST(request: NextRequest) {
     }
     
     // Verify client exists
-    const client = db.clients.getById(body.clientId);
+    const client = await prisma.client.findUnique({
+      where: { id: body.clientId }
+    });
+    
     if (!client) {
       return errorResponse('Client not found', HTTP_STATUS.NOT_FOUND);
     }
     
-    // Create new contract
-    const newContract = db.contracts.create(body as Omit<Contract, 'id' | 'createdAt' | 'updatedAt'>);
+    // Create new contract with Prisma
+    const newContract = await prisma.contract.create({
+      data: {
+        title: body.title,
+        clientId: body.clientId,
+        packageType: body.packageType,
+        startDate: new Date(body.startDate),
+        endDate: body.endDate ? new Date(body.endDate) : null,
+        totalMonths: body.totalMonths || null,
+        syncCallDay: body.syncCallDay || null,
+        value: body.value,
+        status: body.status,
+        description: body.description || null,
+        terms: body.terms || null,
+        files: body.files || []
+      },
+      include: { client: true }
+    });
     
     return successResponse(newContract, 'Contract created successfully');
   } catch (error) {
