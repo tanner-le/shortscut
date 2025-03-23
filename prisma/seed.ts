@@ -3,6 +3,10 @@ import { hash } from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
+// Generate a random 5-digit code
+const generateRandomCode = () => 
+  (10000 + Math.floor(Math.random() * 90000)).toString();
+
 async function main() {
   console.log('Starting seed...')
 
@@ -11,35 +15,34 @@ async function main() {
   const userPassword = await hash('user123', 10)
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@shortscut.com' },
+    where: { id: '1' },
     update: {},
     create: {
+      id: '1',
       name: 'Admin User',
-      email: 'admin@shortscut.com',
-      password: adminPassword,
       role: 'admin',
     },
   })
 
   const user = await prisma.user.upsert({
-    where: { email: 'user@shortscut.com' },
+    where: { id: '2' },
     update: {},
     create: {
+      id: '2',
       name: 'Regular User',
-      email: 'user@shortscut.com',
-      password: userPassword,
-      role: 'user',
+      role: 'teamMember',
     },
   })
 
   console.log('Created users:', { admin, user })
 
-  // Create clients
-  const acme = await prisma.client.upsert({
+  // Create organizations
+  const acme = await prisma.organization.upsert({
     where: { id: '1' },
     update: {},
     create: {
       id: '1',
+      code: generateRandomCode(),
       name: 'Acme Corporation',
       email: 'contact@acme.com',
       phone: '555-123-4567',
@@ -48,14 +51,16 @@ async function main() {
       address: '123 Main St, City, State, 12345',
       notes: 'Key client since 2022.',
       status: 'active',
+      plan: 'creator'
     },
   })
 
-  const globallabs = await prisma.client.upsert({
+  const globallabs = await prisma.organization.upsert({
     where: { id: '2' },
     update: {},
     create: {
       id: '2',
+      code: generateRandomCode(),
       name: 'Global Labs',
       email: 'info@globallabs.com',
       phone: '555-987-6543',
@@ -64,10 +69,11 @@ async function main() {
       address: '456 Science Blvd, City, State, 67890',
       notes: 'Interested in expanding social media presence.',
       status: 'active',
+      plan: 'studio'
     },
   })
 
-  console.log('Created clients:', { acme, globallabs })
+  console.log('Created organizations:', { acme, globallabs })
 
   // Create contracts
   const contract1 = await prisma.contract.upsert({
@@ -76,7 +82,7 @@ async function main() {
     create: {
       id: '1',
       title: 'Social Media Campaign',
-      clientId: '1',
+      organizationId: '1',
       packageType: 'creator',
       startDate: new Date('2023-01-15'),
       endDate: new Date('2023-03-15'),
@@ -96,7 +102,7 @@ async function main() {
     create: {
       id: '2',
       title: 'Brand Refresh',
-      clientId: '2',
+      organizationId: '2',
       packageType: 'studio',
       startDate: new Date('2023-02-01'),
       endDate: new Date('2023-04-01'),

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Client } from '@/types';
+import { Client } from '@/types/client';
 
 // Validation schema
 const clientSchema = z.object({
@@ -16,6 +16,7 @@ const clientSchema = z.object({
   address: z.string().optional(),
   notes: z.string().optional(),
   status: z.enum(['active', 'inactive']),
+  plan: z.enum(['creator', 'studio']),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
@@ -47,6 +48,7 @@ export default function ClientForm({ client, onSubmit, isSubmitting = false }: C
           address: client.address || '',
           notes: client.notes || '',
           status: client.status,
+          plan: client.plan,
         }
       : {
           name: '',
@@ -57,6 +59,7 @@ export default function ClientForm({ client, onSubmit, isSubmitting = false }: C
           address: '',
           notes: '',
           status: 'active',
+          plan: 'creator',
         },
   });
 
@@ -70,7 +73,7 @@ export default function ClientForm({ client, onSubmit, isSubmitting = false }: C
         reset();
       }
     } catch (error: any) {
-      setSubmitError(error.message || 'An error occurred. Please try again.');
+      setSubmitError('An error occurred while saving. Please try again.');
     }
   };
 
@@ -168,6 +171,24 @@ export default function ClientForm({ client, onSubmit, isSubmitting = false }: C
             }`}
           />
           {errors.industry && <p className="mt-1 text-sm text-red-600">{errors.industry.message}</p>}
+        </div>
+
+        {/* Plan - New Field */}
+        <div>
+          <label htmlFor="plan" className="block text-sm font-medium text-gray-700">
+            Subscription Plan <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="plan"
+            {...register('plan')}
+            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+              errors.plan ? 'border-red-300' : ''
+            }`}
+          >
+            <option value="creator">Creator</option>
+            <option value="studio">Studio</option>
+          </select>
+          {errors.plan && <p className="mt-1 text-sm text-red-600">{errors.plan.message}</p>}
         </div>
 
         {/* Status */}

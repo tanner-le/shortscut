@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { successResponse, errorResponse, HTTP_STATUS } from '@/lib/api-utils';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/clients - Get all clients
+// GET /api/clients - Get all clients (now using Organization model)
 export async function GET(request: NextRequest) {
   try {
     // Parse query parameters
@@ -18,11 +18,36 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Fetch clients with Prisma
-    const clients = await prisma.client.findMany({
+    // Fetch organizations with Prisma instead of clients
+    const organizations = await prisma.organization.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: {
+            users: true
+          }
+        }
+      }
     });
+    
+    // Transform to match the expected client format in the frontend
+    const clients = organizations.map(org => ({
+      id: org.id,
+      code: org.code,
+      name: org.name,
+      email: org.email,
+      phone: org.phone,
+      company: org.company,
+      industry: org.industry,
+      address: org.address,
+      notes: org.notes,
+      status: org.status,
+      userCount: org._count.users,
+      plan: org.plan,
+      createdAt: org.createdAt,
+      updatedAt: org.updatedAt
+    }));
     
     return successResponse(clients, 'Clients retrieved successfully');
   } catch (error) {
@@ -31,7 +56,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/clients - Create a new client
+// POST /api/clients - Create a new client (now using Organization model)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -43,19 +68,28 @@ export async function POST(request: NextRequest) {
         return errorResponse(`Missing required field: ${field}`, HTTP_STATUS.BAD_REQUEST);
       }
     }
+
+    // Check if required plan field is provided
+    if (!body.plan || !['creator', 'studio'].includes(body.plan)) {
+      body.plan = 'creator'; // Default to creator plan if not specified
+    }
     
     // Check if email is already in use
-    const existingClient = await prisma.client.findFirst({
+    const existingOrganization = await prisma.organization.findFirst({
       where: { email: body.email }
     });
     
-    if (existingClient) {
+    if (existingOrganization) {
       return errorResponse('Email is already in use', HTTP_STATUS.CONFLICT);
     }
     
-    // Create new client with Prisma
-    const newClient = await prisma.client.create({
+    // Generate a random 5-digit code
+    const code = (10000 + Math.floor(Math.random() * 90000)).toString();
+    
+    // Create new organization with Prisma
+    const newOrganization = await prisma.organization.create({
       data: {
+        code,
         name: body.name,
         email: body.email,
         phone: body.phone || null,
@@ -63,11 +97,12 @@ export async function POST(request: NextRequest) {
         industry: body.industry || null,
         address: body.address || null,
         notes: body.notes || null,
-        status: body.status
+        status: body.status,
+        plan: body.plan
       }
     });
     
-    return successResponse(newClient, 'Client created successfully');
+    return successResponse(newOrganization, 'Client created successfully');
   } catch (error) {
     console.error('Error creating client:', error);
     return errorResponse('Failed to create client', HTTP_STATUS.INTERNAL_SERVER_ERROR);

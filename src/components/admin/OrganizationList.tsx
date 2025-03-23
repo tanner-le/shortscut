@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FiPlus, FiEdit2, FiTrash2, FiUsers, FiMail } from 'react-icons/fi';
+import CreateOrganizationModal, { OrganizationFormData } from './CreateOrganizationModal';
 
 type Organization = {
   id: string;
+  code: string;
   name: string;
   company: string;
   email?: string;
+  plan: 'creator' | 'studio'; 
   userCount: number;
   status: 'active' | 'inactive';
   createdAt: string;
@@ -18,6 +21,7 @@ export default function OrganizationList() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchOrganizations() {
@@ -41,9 +45,11 @@ export default function OrganizationList() {
         setOrganizations([
           {
             id: '1',
+            code: '12345',
             name: 'Acme Corporation',
             company: 'Acme Inc.',
             email: 'contact@acme.com',
+            plan: 'creator',
             userCount: 3,
             status: 'active',
             createdAt: '2023-06-15',
@@ -73,6 +79,33 @@ export default function OrganizationList() {
     fetchOrganizations();
   }, []);
 
+  const handleCreateOrganization = async (data: OrganizationFormData) => {
+    try {
+      const response = await fetch('/api/organizations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to create organization');
+      }
+
+      // Add the new organization to the list
+      setOrganizations([result.data, ...organizations]);
+      
+      // Show success message
+      alert('Organization created successfully!');
+    } catch (err: any) {
+      console.error('Error creating organization:', err);
+      alert(`Failed to create organization: ${err.message}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -92,17 +125,24 @@ export default function OrganizationList() {
   }
 
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-      <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-        <h2 className="text-lg leading-6 font-medium text-gray-900">Organizations</h2>
-        <Link
-          href="/admin/organizations/create"
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+    <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="flex justify-between items-center p-4 border-b">
+        <h2 className="text-lg font-semibold">Organizations</h2>
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex items-center bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 transition-colors"
         >
-          <FiPlus className="mr-2 -ml-1 h-5 w-5" />
-          New Organization
-        </Link>
+          <FiPlus className="mr-1" /> Add Organization
+        </button>
       </div>
+
+      {/* Create Organization Modal */}
+      <CreateOrganizationModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateOrganization}
+      />
+      
       <div className="border-t border-gray-200">
         {organizations.length === 0 ? (
           <div className="text-center py-8">

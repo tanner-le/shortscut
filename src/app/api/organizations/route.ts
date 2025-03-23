@@ -1,125 +1,104 @@
 import { NextRequest } from 'next/server';
+import { organizationService, OrganizationPlan } from '@/services/organizationService';
 import { successResponse, errorResponse, HTTP_STATUS } from '@/lib/api-utils';
-import { createClient } from '@supabase/supabase-js';
-import { organizationService } from '@/services/organizationService';
+import { authenticate, hasRole } from '@/lib/auth';
 
-// GET /api/organizations - Get all organizations
+// Define types for the organization data
+interface OrganizationData {
+  id: string;
+  code: string;
+  name: string;
+  company: string;
+  email?: string | null;
+  phone?: string | null;
+  industry?: string | null;
+  address?: string | null;
+  plan: OrganizationPlan;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  users: any[];
+  _count?: {
+    users: number;
+    contracts: number;
+  };
+}
+
+// GET /api/organizations - Get all organizations (admin only)
 export async function GET(request: NextRequest) {
-  try {
-    // Create Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    
-    // Get the session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session) {
-      return errorResponse('Authentication required', HTTP_STATUS.UNAUTHORIZED);
+  return authenticate(request, async (req, user) => {
+    try {
+      // Check if user is admin
+      if (!hasRole(user, 'admin')) {
+        return errorResponse('Unauthorized', HTTP_STATUS.FORBIDDEN);
+      }
+
+      const organizations = await organizationService.getAll();
+      
+      // Transform to include user count
+      const transformedOrgs = organizations.map((org: OrganizationData) => ({
+        id: org.id,
+        code: org.code,
+        name: org.name,
+        company: org.company,
+        email: org.email,
+        phone: org.phone,
+        industry: org.industry,
+        address: org.address,
+        plan: org.plan,
+        status: org.status,
+        userCount: org._count?.users || 0,
+        contractCount: org._count?.contracts || 0,
+        createdAt: org.createdAt.toISOString(),
+        updatedAt: org.updatedAt.toISOString()
+      }));
+
+      return successResponse(transformedOrgs);
+    } catch (error: any) {
+      console.error('Error fetching organizations:', error);
+      return errorResponse(error.message, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
-    
-    // Check if user is admin
-    const user = session.user;
-    const role = user.user_metadata?.role || user.role;
-    if (role !== 'admin') {
-      return errorResponse('Unauthorized access', HTTP_STATUS.FORBIDDEN);
-    }
-    
-    // For development purposes, return mock data
-    // In production, you would query your database for real data
-    const mockOrganizations = [
-      {
-        id: '1',
-        name: 'Acme Corporation',
-        company: 'Acme Inc.',
-        email: 'contact@acme.com',
-        userCount: 3,
-        status: 'active',
-        createdAt: '2023-06-15',
-      },
-      {
-        id: '2',
-        name: 'TechStart Solutions',
-        company: 'TechStart LLC',
-        email: 'info@techstart.com',
-        userCount: 5,
-        status: 'active',
-        createdAt: '2023-08-22',
-      },
-      {
-        id: '3',
-        name: 'Global Designs',
-        company: 'Global Designs Co.',
-        email: 'hello@globaldesigns.com',
-        userCount: 2,
-        status: 'inactive',
-        createdAt: '2023-09-10',
-      },
-    ];
-    
-    return successResponse(mockOrganizations, 'Organizations retrieved successfully');
-  } catch (error) {
-    console.error('Error fetching organizations:', error);
-    return errorResponse('An error occurred while fetching organizations', HTTP_STATUS.INTERNAL_SERVER_ERROR);
-  }
+  });
 }
 
 // POST /api/organizations - Create a new organization (admin only)
 export async function POST(request: NextRequest) {
-  try {
-    // Get the Supabase auth header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return errorResponse('Authentication required', HTTP_STATUS.UNAUTHORIZED);
-    }
-
-    // Create Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    // Verify the token and get the user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-
-    if (authError || !user) {
-      return errorResponse('Invalid authentication token', HTTP_STATUS.UNAUTHORIZED);
-    }
-
-    // Check if user is admin
-    if (user.user_metadata?.role !== 'admin') {
-      return errorResponse('Admin access required', HTTP_STATUS.FORBIDDEN);
-    }
-
-    // Parse request body
-    const { name, company, email, phone, industry, address, notes } = await request.json();
-
-    // Validate required fields
-    if (!name || !company) {
-      return errorResponse('Name and company are required', HTTP_STATUS.BAD_REQUEST);
-    }
-
-    // Create the organization
+  return authenticate(request, async (req, user) => {
     try {
-      const organization = await organizationService.create({
-        name,
-        company,
-        email,
-        phone,
-        industry,
-        address,
-        notes
-      });
+      // Check if user is admin
+      if (!hasRole(user, 'admin')) {
+        return errorResponse('Unauthorized', HTTP_STATUS.FORBIDDEN);
+      }
 
-      return successResponse(organization, 'Organization created successfully');
-    } catch (err: any) {
-      return errorResponse(err.message || 'Error creating organization', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+      const data = await request.json();
+      
+      // Validate required fields
+      if (!data.name || !data.company || !data.email || !data.plan) {
+        return errorResponse('Name, company, email and plan are required', HTTP_STATUS.BAD_REQUEST);
+      }
+      
+      // Create organization
+      const organization = await organizationService.create(data);
+      
+      return successResponse({
+        id: organization.id,
+        code: organization.code,
+        name: organization.name,
+        company: organization.company,
+        email: organization.email,
+        phone: organization.phone,
+        industry: organization.industry,
+        address: organization.address,
+        plan: organization.plan,
+        status: organization.status,
+        userCount: 0,
+        contractCount: 0,
+        createdAt: organization.createdAt.toISOString(),
+        updatedAt: organization.updatedAt.toISOString()
+      }, 'Organization created successfully');
+    } catch (error: any) {
+      console.error('Error creating organization:', error);
+      return errorResponse(error.message, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
-  } catch (error) {
-    console.error('Organization creation error:', error);
-    return errorResponse('An error occurred while creating the organization', HTTP_STATUS.INTERNAL_SERVER_ERROR);
-  }
+  });
 } 

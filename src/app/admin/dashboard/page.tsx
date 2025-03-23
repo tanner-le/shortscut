@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import SessionDebugger from '@/components/debug/SessionDebugger';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import AdminDashboardLayout from '@/components/admin/AdminDashboardLayout';
 import ClientList from '@/components/admin/ClientList';
@@ -17,7 +16,6 @@ import { FiAlertCircle, FiUsers, FiBriefcase, FiCalendar, FiLogIn } from 'react-
  * - Authentication checks to ensure only admin users can access
  * - Overview statistics (clients, projects, team members)
  * - Client management through ClientList component
- * - Development information when in development mode
  * 
  * @returns {JSX.Element} The rendered admin dashboard page
  */
@@ -114,13 +112,6 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // Dashboard stats data
-  const stats = [
-    { name: 'Total Clients', value: '12', icon: FiBriefcase, color: 'from-blue-500 to-blue-600' },
-    { name: 'Active Projects', value: '8', icon: FiCalendar, color: 'from-emerald-500 to-emerald-600' },
-    { name: 'Team Members', value: '24', icon: FiUsers, color: 'from-purple-500 to-purple-600' },
-  ];
-
   return (
     <AdminDashboardLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-white">
@@ -137,58 +128,10 @@ export default function AdminDashboardPage() {
           </div>
         </div>
         
-        {/* Stats overview */}
-        <div className="mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {stats.map((stat) => (
-              <div key={stat.name} className="bg-[#1a2233] rounded-lg p-5 border border-[#2a3347] shadow-md">
-                <div className="flex items-center">
-                  <div className={`flex-shrink-0 bg-gradient-to-r ${stat.color} p-2.5 rounded-lg`}>
-                    <stat.icon className="h-5 w-5 text-white" aria-hidden="true" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-xs font-medium text-gray-400">{stat.name}</p>
-                    <p className="text-xl font-semibold text-white">{stat.value}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        
         {/* Client Management Section */}
         <div className="space-y-6">
           <ClientList />
         </div>
-        
-        {/* Development information - only shown in development environment */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-8 pt-6 border-t border-[#2a3347]">
-            <h2 className="text-lg font-medium mb-4 text-white">Development Information</h2>
-            {user && (
-              <div className="p-5 bg-[#1a2233] rounded-lg border border-[#2a3347] shadow-md mb-4">
-                <h3 className="text-md font-medium text-white mb-2">Admin User</h3>
-                <pre className="p-3 bg-[#111827] rounded-md overflow-auto text-xs text-gray-300 max-h-48">
-                  {JSON.stringify({
-                    userId: user.id,
-                    email: user.email,
-                    role: user.user_metadata?.role || user.role,
-                    metadata: user.user_metadata
-                  }, null, 2)}
-                </pre>
-              </div>
-            )}
-            
-            <div className="bg-[#1a2233] rounded-lg border border-[#2a3347] shadow-md overflow-hidden">
-              <div className="p-3 bg-[#2a3347]/50 border-b border-[#2a3347]">
-                <h3 className="text-md font-medium text-white">Session Debugger</h3>
-              </div>
-              <div className="p-4">
-                <SessionDebugger />
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </AdminDashboardLayout>
   );

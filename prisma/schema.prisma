@@ -41,23 +41,33 @@ enum UserRole {
   @@schema("public")
 }
 
+/// Organization plan types
+enum OrganizationPlan {
+  creator        /// Creator plan subscription
+  studio         /// Studio plan subscription
+  
+  @@schema("public")
+}
+
 /// Organization model representing client companies
 /// Acts as a container for users and contracts
 model Organization {
-  id          String        @id @default(uuid())
-  name        String        /// Organization display name
-  email       String?       /// Primary contact email
-  phone       String?       /// Primary contact phone
-  company     String        /// Legal company name
-  industry    String?       /// Industry or sector
-  address     String?       /// Physical address
-  notes       String?       /// Additional notes
-  status      ClientStatus  /// Active or inactive status
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  users       User[]        /// Users associated with this organization
-  invitations Invitation[]  /// Pending invitations to join
-  contracts   Contract[]    /// Contracts with this organization
+  id          String            @id @default(uuid())
+  code        String            @unique /// 5-digit unique organization code
+  name        String            /// Organization display name
+  email       String?           /// Primary contact email
+  phone       String?           /// Primary contact phone
+  company     String            /// Legal company name
+  industry    String?           /// Industry or sector
+  address     String?           /// Physical address
+  plan        OrganizationPlan  /// Subscription plan type (creator or studio)
+  notes       String?           /// Additional notes
+  status      ClientStatus      /// Active or inactive status
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  users       User[]            /// Users associated with this organization
+  invitations Invitation[]      /// Pending invitations to join
+  contracts   Contract[]        /// Contracts with this organization
   
   @@schema("public")
 }
@@ -83,24 +93,6 @@ enum InvitationStatus {
   pending
   accepted
   expired
-  
-  @@schema("public")
-}
-
-// Client model - renaming to Legacy Client to avoid conflicts
-model Client {
-  id        String       @id @default(uuid())
-  name      String
-  email     String
-  phone     String?
-  company   String
-  industry  String?
-  address   String?
-  notes     String?
-  status    ClientStatus
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  contracts Contract[]
   
   @@schema("public")
 }
@@ -131,10 +123,6 @@ model Contract {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   projects       Project[]
-  
-  // Legacy relation - keep for data migration
-  clientId       String?
-  client         Client?        @relation(fields: [clientId], references: [id])
   
   @@schema("public")
 }

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { FiPlus, FiEdit2, FiEye, FiUsers, FiRefreshCw, FiFilter, FiChevronDown, FiSliders, FiBriefcase, FiAlertCircle } from 'react-icons/fi';
 import Link from 'next/link';
-import { Client } from '@/types';
+import { Client } from '@/types/client';
+import CreateOrganizationModal from './CreateOrganizationModal';
 
 /**
  * ClientList component displays a list of clients with filtering and management capabilities.
@@ -22,6 +23,7 @@ export default function ClientList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   /**
    * Fetches clients from the API with optional status filtering
@@ -54,6 +56,37 @@ export default function ClientList() {
     fetchClients();
   }, [statusFilter]);
 
+  // Handle organization creation
+  const handleCreateOrganization = async (data: any) => {
+    try {
+      const response = await fetch('/api/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create organization');
+      }
+
+      const result = await response.json();
+      
+      // Add the new organization to the list
+      setClients([result.data, ...clients]);
+      
+      // Close the modal
+      setIsCreateModalOpen(false);
+      
+      // Show success notification
+      alert('Organization created successfully!');
+    } catch (error: any) {
+      console.error('Error creating organization:', error);
+      throw new Error('Unable to create organization. Please try again.');
+    }
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -80,14 +113,14 @@ export default function ClientList() {
                 Manage your clients and their team members
               </p>
             </div>
-            <Link
-              href="/admin/clients/new"
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
               className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none"
               aria-label="Add new client"
             >
               <FiPlus className="mr-1.5 -ml-0.5 h-4 w-4" aria-hidden="true" />
               Add Client
-            </Link>
+            </button>
           </div>
         </div>
         
@@ -98,9 +131,9 @@ export default function ClientList() {
                 <FiAlertCircle className="h-5 w-5 text-red-500" aria-hidden="true" />
               </div>
               <div className="ml-3">
-                <h3 className="text-base font-medium text-red-400">Database Connection Error</h3>
+                <h3 className="text-base font-medium text-red-400">Error Loading Clients</h3>
                 <div className="mt-1 text-sm text-gray-400">
-                  <p>{error}</p>
+                  <p>Unable to load clients. Please try again.</p>
                 </div>
                 <div className="mt-3">
                   <button
@@ -109,8 +142,8 @@ export default function ClientList() {
                     className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm rounded-md shadow-sm text-white bg-red-500/60 hover:bg-red-500/80 focus:outline-none"
                     aria-label="Retry fetching clients"
                   >
-                    <FiRefreshCw className="mr-1.5 -ml-0.5 h-4 w-4 animate-spin" aria-hidden="true" />
-                    Retry Connection
+                    <FiRefreshCw className="mr-1.5 -ml-0.5 h-4 w-4" aria-hidden="true" />
+                    Retry
                   </button>
                 </div>
               </div>
@@ -121,21 +154,27 @@ export default function ClientList() {
             <div className="w-16 h-16 mx-auto rounded-full bg-blue-500/10 flex items-center justify-center mb-3">
               <FiUsers className="h-8 w-8 text-blue-400" aria-hidden="true" />
             </div>
-            <h3 className="text-lg font-medium text-white mb-2">Getting Started with Clients</h3>
+            <h3 className="text-lg font-medium text-white mb-2">No Clients Available</h3>
             <p className="text-sm text-gray-400 mb-5 max-w-md mx-auto">
-              You can still add clients while troubleshooting the database connection.
-              New clients will be saved once the connection is restored.
+              You can add clients using the button below.
             </p>
-            <Link
-              href="/admin/clients/new"
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none"
               aria-label="Create your first client"
             >
               <FiPlus className="mr-1.5 -ml-0.5 h-4 w-4" aria-hidden="true" />
               Create your first client
-            </Link>
+            </button>
           </div>
         </div>
+
+        {/* Organization Creation Modal */}
+        <CreateOrganizationModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSubmit={handleCreateOrganization}
+        />
       </div>
     );
   }
@@ -179,14 +218,14 @@ export default function ClientList() {
             >
               <FiSliders className="h-4 w-4" aria-hidden="true" />
             </button>
-            <Link
-              href="/admin/clients/new"
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
               className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none"
               aria-label="Add new client"
             >
               <FiPlus className="mr-1.5 -ml-0.5 h-4 w-4" aria-hidden="true" />
               Add Client
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -201,14 +240,14 @@ export default function ClientList() {
           <p className="text-sm text-gray-400 mb-5 max-w-md mx-auto">
             Start by adding your first client to begin managing projects and team members.
           </p>
-          <Link
-            href="/admin/clients/new"
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none"
             aria-label="Create your first client"
           >
             <FiPlus className="mr-1.5 -ml-0.5 h-4 w-4" aria-hidden="true" />
             Create your first client
-          </Link>
+          </button>
         </div>
       ) : (
         /* Client table */
@@ -238,6 +277,12 @@ export default function ClientList() {
                   scope="col"
                   className="px-5 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider"
                 >
+                  Plan
+                </th>
+                <th
+                  scope="col"
+                  className="px-5 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider"
+                >
                   Status
                 </th>
                 <th scope="col" className="relative px-5 py-3">
@@ -250,6 +295,7 @@ export default function ClientList() {
                 <tr key={client.id} className="hover:bg-[#151f2e] transition-colors duration-150">
                   <td className="px-5 py-3 whitespace-nowrap">
                     <div className="text-sm font-medium text-white">{client.company}</div>
+                    <div className="text-xs text-gray-400">Code: {client.code}</div>
                   </td>
                   <td className="px-5 py-3 whitespace-nowrap">
                     <div className="text-sm text-white">{client.name}</div>
@@ -257,6 +303,15 @@ export default function ClientList() {
                   </td>
                   <td className="px-5 py-3 whitespace-nowrap">
                     <div className="text-sm text-gray-300">{client.industry || 'N/A'}</div>
+                  </td>
+                  <td className="px-5 py-3 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                      client.plan === 'creator'
+                        ? 'bg-blue-500/10 text-blue-400'
+                        : 'bg-purple-500/10 text-purple-400'
+                    }`}>
+                      {client.plan === 'creator' ? 'Creator' : 'Studio'}
+                    </span>
                   </td>
                   <td className="px-5 py-3 whitespace-nowrap">
                     <span
@@ -303,6 +358,13 @@ export default function ClientList() {
           </table>
         </div>
       )}
+
+      {/* Organization Creation Modal */}
+      <CreateOrganizationModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateOrganization}
+      />
     </div>
   );
 } 
