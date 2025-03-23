@@ -118,3 +118,37 @@ This project is proprietary and confidential.
 - Built with Next.js
 - Styled with Tailwind CSS
 - State managed with Redux Toolkit
+
+## Database Setup
+
+This project uses PostgreSQL with Prisma ORM for data management. Follow these steps to set up the database:
+
+1. **Create a PostgreSQL Database**
+   - You can use a cloud provider like [Supabase](https://supabase.com/), [Railway](https://railway.app/), or [Neon](https://neon.tech/)
+   - Create a new PostgreSQL database and copy the connection string
+
+2. **Configure Environment Variables**
+   - Update the `.env` file with your database connection string:
+   ```
+   DATABASE_URL="postgresql://username:password@hostname:port/database?schema=public"
+   JWT_SECRET="your-secret-key-here"
+   ```
+
+3. **Apply Database Migrations**
+   - Run `npx prisma migrate dev --name init` to create the database tables
+   - This will create all necessary tables based on the schema defined in `prisma/schema.prisma`
+
+4. **Seed the Database (Optional)**
+   - Run `npx prisma db seed` to populate the database with initial data
+   - The seed script is defined in the `prisma/seed.ts` file
+
+## Database Schema
+
+The database schema includes the following models:
+
+- **Users**: Application users with authentication
+- **Clients**: Client organizations
+- **Contracts**: Agreements between clients and your business
+- **Projects**: Individual projects within contracts
+
+You can view the schema in the Prisma Studio by running `npx prisma studio`.
