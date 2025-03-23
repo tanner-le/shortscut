@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
-export default function Home() {
-  // In a real application, we'd check if the user is already authenticated
-  // and redirect them to the dashboard if they are
-  redirect('/auth/login');
+export default function HomePage() {
+  // For now, we'll simply redirect to the login page
+  // Authentication will be handled by the dashboard page
+  redirect('/login');
 }
