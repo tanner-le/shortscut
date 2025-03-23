@@ -50,3 +50,8 @@ next-env.d.ts
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Repository cleaning backups
+repo-backup/
+backup_repo/
+clean-repo.ps1
