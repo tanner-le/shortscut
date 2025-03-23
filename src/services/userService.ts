@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { hash, compare } from 'bcryptjs'
 
-type UserRole = 'admin' | 'user'
+type UserRole = 'admin' | 'client' | 'teamMember'
 
 export interface User {
   id: string
@@ -10,6 +10,8 @@ export interface User {
   email: string
   password: string
   role: UserRole
+  organizationId?: string | null
+  phoneNumber?: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -19,6 +21,8 @@ export type UserCreateInput = {
   email: string
   password: string
   role?: UserRole
+  organizationId?: string
+  phoneNumber?: string
 }
 
 export type UserUpdateInput = Partial<{
@@ -26,6 +30,8 @@ export type UserUpdateInput = Partial<{
   email: string
   password: string
   role: UserRole
+  organizationId: string | null
+  phoneNumber: string | null
 }>
 
 export const userService = {
@@ -58,7 +64,7 @@ export const userService = {
       data: {
         ...data,
         password: hashedPassword,
-        role: data.role || 'user'
+        role: data.role || 'teamMember'
       }
     })
   },
@@ -96,5 +102,42 @@ export const userService = {
     if (!isValid) return null
 
     return user
+  },
+  
+  // Create admin user (for initial setup)
+  createAdmin: async (name: string, email: string, password: string): Promise<User> => {
+    const hashedPassword = await hash(password, 10)
+    
+    return prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: 'admin'
+      }
+    })
+  },
+  
+  // Create user from invitation
+  createFromInvitation: async (
+    name: string, 
+    email: string, 
+    password: string, 
+    role: UserRole,
+    organizationId: string,
+    phoneNumber?: string
+  ): Promise<User> => {
+    const hashedPassword = await hash(password, 10)
+    
+    return prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role,
+        organizationId,
+        phoneNumber
+      }
+    })
   }
 } 

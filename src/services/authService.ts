@@ -3,7 +3,7 @@ import { userService } from './userService'
 import type { User } from './userService'
 
 // JWT config
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production'
+const JWT_SECRET = process.env.JWT_SECRET!
 const JWT_EXPIRES_IN = '7d' // Token expires in 7 days
 
 type TokenPayload = {
@@ -31,7 +31,7 @@ export const authService = {
       name,
       email,
       password,
-      role: 'user' // Default role for new registrations
+      role: 'teamMember' // Default role for new registrations
     })
 
     // Generate token

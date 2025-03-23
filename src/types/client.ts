@@ -4,8 +4,10 @@ export interface Client {
   email: string;
   phone: string;
   company: string;
+  industry?: string;
   address?: string;
   notes?: string;
+  status: 'active' | 'inactive';
   createdAt: string;
   updatedAt: string;
 } 

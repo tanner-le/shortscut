@@ -4,8 +4,8 @@ import { errorResponse, HTTP_STATUS } from './api-utils';
 import { prisma } from './prisma';
 import { authService } from '@/services/authService';
 
-// JWT secret from environment variable
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production';
+// JWT secret from environment variable - must be set in environment
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 // JWT token payload type
 export interface JwtPayload {

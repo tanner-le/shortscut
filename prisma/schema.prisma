@@ -10,28 +10,84 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  schemas = ["public"]
 }
 
-// User model
+/// User model for authentication and system access
+/// Contains basic user information and references to related organization
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      UserRole
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String        @id @map("id") @db.Uuid
+  name           String?       /// User's full name
+  role           UserRole      /// User's role in the system
+  organizationId String?       /// Optional reference to the user's organization
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  phoneNumber    String?       /// Optional user contact number
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  
+  @@map("users")
+  @@schema("public")
 }
 
+/// Defines possible user roles in the system
 enum UserRole {
-  admin
-  user
+  admin          /// System administrator with full access
+  client         /// Client with limited access to their own data
+  teamMember     /// Internal team member with standard permissions
+  
+  @@schema("public")
 }
 
-// Client model
+/// Organization model representing client companies
+/// Acts as a container for users and contracts
+model Organization {
+  id          String        @id @default(uuid())
+  name        String        /// Organization display name
+  email       String?       /// Primary contact email
+  phone       String?       /// Primary contact phone
+  company     String        /// Legal company name
+  industry    String?       /// Industry or sector
+  address     String?       /// Physical address
+  notes       String?       /// Additional notes
+  status      ClientStatus  /// Active or inactive status
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  users       User[]        /// Users associated with this organization
+  invitations Invitation[]  /// Pending invitations to join
+  contracts   Contract[]    /// Contracts with this organization
+  
+  @@schema("public")
+}
+
+// Invitation model
+model Invitation {
+  id             String           @id @default(uuid())
+  email          String
+  name           String
+  role           UserRole
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  token          String           @unique
+  status         InvitationStatus
+  expiresAt      DateTime
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  
+  @@schema("public")
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  expired
+  
+  @@schema("public")
+}
+
+// Client model - renaming to Legacy Client to avoid conflicts
 model Client {
   id        String       @id @default(uuid())
   name      String
@@ -45,19 +101,23 @@ model Client {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   contracts Contract[]
+  
+  @@schema("public")
 }
 
 enum ClientStatus {
   active
   inactive
+  
+  @@schema("public")
 }
 
 // Contract model
 model Contract {
   id             String         @id @default(uuid())
   title          String
-  clientId       String
-  client         Client         @relation(fields: [clientId], references: [id])
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
   packageType    PackageType
   startDate      DateTime
   endDate        DateTime?
@@ -71,11 +131,19 @@ model Contract {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   projects       Project[]
+  
+  // Legacy relation - keep for data migration
+  clientId       String?
+  client         Client?        @relation(fields: [clientId], references: [id])
+  
+  @@schema("public")
 }
 
 enum PackageType {
   creator
   studio
+  
+  @@schema("public")
 }
 
 enum ContractStatus {
@@ -85,6 +153,8 @@ enum ContractStatus {
   active
   completed
   cancelled
+  
+  @@schema("public")
 }
 
 // Project model
@@ -100,6 +170,8 @@ model Project {
   status      ProjectStatus
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  
+  @@schema("public")
 }
 
 enum ProjectStatus {
@@ -108,4 +180,6 @@ enum ProjectStatus {
   review
   completed
   on_hold     @map("on-hold")
+  
+  @@schema("public")
 }
