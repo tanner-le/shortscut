@@ -364,10 +364,10 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
         </header>
         
         {/* Client profile header */}
-        <div className="bg-gradient-to-br from-[#1a2233] to-[#151f2e] px-6 py-8">
+        <div className="bg-[#151C2C] px-6 py-8 shadow-md">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
             <div className="flex">
-              <div className="w-18 h-18 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center flex-shrink-0 text-white text-3xl font-bold shadow-lg">
+              <div className="w-18 h-18 bg-[#1D2939] border border-[#2A354C] rounded-xl flex items-center justify-center flex-shrink-0 text-white text-3xl font-bold">
                 {client.company[0]}
               </div>
               
@@ -381,15 +381,19 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
                   <span 
                     className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                       client.status === 'active' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400' 
-                        : 'bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400'
+                        ? 'bg-[#1D2939] text-[#66BB6A] border border-[#66BB6A]/30' 
+                        : 'bg-[#1D2939] text-[#FF7043] border border-[#FF7043]/30'
                     }`}
                   >
                     {client.status}
                   </span>
                   
                   <span 
-                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-400"
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                      client.plan === 'creator' 
+                        ? 'bg-[#1D2939] text-[#42A5F5] border border-[#42A5F5]/30' 
+                        : 'bg-[#1D2939] text-[#FF4F01] border border-[#FF4F01]/30'
+                    }`}
                   >
                     {client.plan === 'creator' ? 'Creator' : 'Studio'} Plan
                   </span>
@@ -406,9 +410,9 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
               {client.email && (
                 <a 
                   href={`mailto:${client.email}`} 
-                  className="inline-flex items-center px-4 py-2 rounded-lg text-sm text-gray-300 hover:text-white bg-[#1f2937]/70 hover:bg-[#1f2937] transition-colors duration-150"
+                  className="inline-flex items-center px-4 py-2 rounded-lg text-sm text-gray-300 hover:text-white bg-[#1D2939] hover:bg-[#2A354C] transition-colors duration-150"
                 >
-                  <FiMail className="mr-2 h-4 w-4 text-blue-400" />
+                  <FiMail className="mr-2 h-4 w-4 text-gray-400" />
                   {client.email}
                 </a>
               )}
@@ -416,49 +420,49 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
               {client.phone && (
                 <a 
                   href={`tel:${client.phone}`} 
-                  className="inline-flex items-center px-4 py-2 rounded-lg text-sm text-gray-300 hover:text-white bg-[#1f2937]/70 hover:bg-[#1f2937] transition-colors duration-150"
+                  className="inline-flex items-center px-4 py-2 rounded-lg text-sm text-gray-300 hover:text-white bg-[#1D2939] hover:bg-[#2A354C] transition-colors duration-150"
                 >
-                  <FiPhone className="mr-2 h-4 w-4 text-green-400" />
+                  <FiPhone className="mr-2 h-4 w-4 text-gray-400" />
                   {client.phone}
                 </a>
               )}
             </div>
           </div>
           
-          {/* Tab navigation - moved below client info */}
-          <div className="mt-8 border-b border-[#2a3347]/50">
+          {/* Tab navigation */}
+          <div className="mt-8 border-b border-[#2A354C]">
             <div className="flex space-x-1">
               <button 
                 onClick={() => setActiveTab('details')} 
                 className={`px-6 py-3 flex items-center font-medium text-sm transition-colors duration-150 ${
                   activeTab === 'details' 
-                    ? 'text-white border-b-2 border-blue-500' 
+                    ? 'text-white border-b-2 border-[#FF4F01]' 
                     : 'text-gray-400 hover:text-gray-300'
                 }`}
               >
-                <FiFileText className={`mr-2 h-4 w-4 ${activeTab === 'details' ? 'text-blue-400' : ''}`} />
+                <FiFileText className={`mr-2 h-4 w-4 ${activeTab === 'details' ? 'text-[#FF4F01]' : ''}`} />
                 Details
               </button>
               <button 
                 onClick={() => setActiveTab('team')} 
                 className={`px-6 py-3 flex items-center font-medium text-sm transition-colors duration-150 ${
                   activeTab === 'team' 
-                    ? 'text-white border-b-2 border-blue-500' 
+                    ? 'text-white border-b-2 border-[#FF4F01]' 
                     : 'text-gray-400 hover:text-gray-300'
                 }`}
               >
-                <FiUsers className={`mr-2 h-4 w-4 ${activeTab === 'team' ? 'text-blue-400' : ''}`} />
+                <FiUsers className={`mr-2 h-4 w-4 ${activeTab === 'team' ? 'text-[#FF4F01]' : ''}`} />
                 Team
               </button>
               <button 
                 onClick={() => setActiveTab('communications')} 
                 className={`px-6 py-3 flex items-center font-medium text-sm transition-colors duration-150 ${
                   activeTab === 'communications' 
-                    ? 'text-white border-b-2 border-blue-500' 
+                    ? 'text-white border-b-2 border-[#FF4F01]' 
                     : 'text-gray-400 hover:text-gray-300'
                 }`}
               >
-                <FiMessageCircle className={`mr-2 h-4 w-4 ${activeTab === 'communications' ? 'text-blue-400' : ''}`} />
+                <FiMessageCircle className={`mr-2 h-4 w-4 ${activeTab === 'communications' ? 'text-[#FF4F01]' : ''}`} />
                 Communications
               </button>
             </div>
@@ -473,10 +477,10 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
               <div className="fade-in">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                   {/* Client Overview Card - Redesigned information section */}
-                  <div className="lg:col-span-2 bg-[#1a2233] rounded-xl border border-[#2a3347] overflow-hidden shadow-lg">
-                    <div className="px-5 py-4 border-b border-[#2a3347] flex justify-between items-center">
+                  <div className="lg:col-span-2 bg-[#151C2C] rounded-xl border border-[#2A354C] overflow-hidden shadow-lg">
+                    <div className="px-5 py-4 border-b border-[#2A354C] flex justify-between items-center">
                       <h3 className="text-lg font-medium text-white">Client Information</h3>
-                      <button className="text-blue-400 hover:text-blue-300 text-sm flex items-center">
+                      <button className="text-[#FF4F01] hover:text-[#FF7E3D] text-sm flex items-center transition-colors duration-200">
                         <FiEdit2 className="h-3.5 w-3.5 mr-1" />
                         Edit
                       </button>
@@ -486,7 +490,7 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
                         <div className="space-y-6">
                           <div className="flex items-start">
-                            <div className="h-10 w-10 rounded-lg bg-blue-500/15 flex items-center justify-center text-blue-400 mr-3 flex-shrink-0">
+                            <div className="h-10 w-10 rounded-lg bg-[#1D2939] flex items-center justify-center text-gray-400 mr-3 flex-shrink-0">
                               <FiBriefcase className="h-5 w-5" />
                             </div>
                             <div>
@@ -496,7 +500,7 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
                           </div>
                           
                           <div className="flex items-start">
-                            <div className="h-10 w-10 rounded-lg bg-purple-500/15 flex items-center justify-center text-purple-400 mr-3 flex-shrink-0">
+                            <div className="h-10 w-10 rounded-lg bg-[#1D2939] flex items-center justify-center text-gray-400 mr-3 flex-shrink-0">
                               <FiUsers className="h-5 w-5" />
                             </div>
                             <div>
@@ -506,7 +510,7 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
                           </div>
                           
                           <div className="flex items-start">
-                            <div className="h-10 w-10 rounded-lg bg-cyan-500/15 flex items-center justify-center text-cyan-400 mr-3 flex-shrink-0">
+                            <div className="h-10 w-10 rounded-lg bg-[#1D2939] flex items-center justify-center text-gray-400 mr-3 flex-shrink-0">
                               <FiMapPin className="h-5 w-5" />
                             </div>
                             <div>
@@ -518,7 +522,7 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
                         
                         <div className="space-y-6">
                           <div className="flex items-start">
-                            <div className="h-10 w-10 rounded-lg bg-yellow-500/15 flex items-center justify-center text-yellow-400 mr-3 flex-shrink-0">
+                            <div className="h-10 w-10 rounded-lg bg-[#1D2939] flex items-center justify-center text-gray-400 mr-3 flex-shrink-0">
                               <FiMail className="h-5 w-5" />
                             </div>
                             <div>
@@ -528,7 +532,7 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
                           </div>
                           
                           <div className="flex items-start">
-                            <div className="h-10 w-10 rounded-lg bg-indigo-500/15 flex items-center justify-center text-indigo-400 mr-3 flex-shrink-0">
+                            <div className="h-10 w-10 rounded-lg bg-[#1D2939] flex items-center justify-center text-gray-400 mr-3 flex-shrink-0">
                               <FiPhone className="h-5 w-5" />
                             </div>
                             <div>
@@ -538,7 +542,7 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
                           </div>
                           
                           <div className="flex items-start">
-                            <div className="h-10 w-10 rounded-lg bg-green-500/15 flex items-center justify-center text-green-400 mr-3 flex-shrink-0">
+                            <div className="h-10 w-10 rounded-lg bg-[#1D2939] flex items-center justify-center text-gray-400 mr-3 flex-shrink-0">
                               <FiCalendar className="h-5 w-5" />
                             </div>
                             <div>
@@ -549,9 +553,9 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
                         </div>
                       </div>
                       
-                      <div className="mt-6 pt-5 border-t border-[#2a3347]">
+                      <div className="mt-6 pt-5 border-t border-[#2A354C]">
                         <div className="flex items-start">
-                          <div className="h-10 w-10 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 mr-3 flex-shrink-0">
+                          <div className="h-10 w-10 rounded-lg bg-[#1D2939] flex items-center justify-center text-gray-400 mr-3 flex-shrink-0">
                             <FiFileText className="h-5 w-5" />
                           </div>
                           <div>
@@ -564,59 +568,39 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
                   </div>
                   
                   {/* Client Stats Card */}
-                  <div className="bg-[#1a2233] rounded-xl border border-[#2a3347] overflow-hidden shadow-lg">
-                    <div className="px-5 py-4 border-b border-[#2a3347]">
+                  <div className="bg-[#151C2C] rounded-xl border border-[#2A354C] overflow-hidden shadow-lg">
+                    <div className="px-5 py-4 border-b border-[#2A354C]">
                       <h3 className="text-lg font-medium text-white">Client Stats</h3>
                     </div>
                     
                     <div className="p-5 space-y-5">
-                      <div className="bg-[#151f2e] p-4 rounded-lg">
+                      <div className="bg-[#0F1520] p-4 rounded-lg">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-medium text-gray-400">Team Size</h4>
-                          <span className="text-2xl font-bold text-white">{teamMembers.length}</span>
+                          <h4 className="text-sm font-medium text-gray-400">Videos Delivered This Month</h4>
+                          <span className="text-2xl font-bold text-white">12</span>
                         </div>
-                        <div className="w-full bg-[#111827] rounded-full h-1">
-                          <div className="bg-blue-500 h-1 rounded-full" style={{ width: `${Math.min(teamMembers.length * 10, 100)}%` }}></div>
+                        <div className="w-full bg-[#1D2939] rounded-full h-1.5">
+                          <div className="bg-[#FF4F01] h-1.5 rounded-full" style={{ width: `60%` }}></div>
                         </div>
                       </div>
                       
-                      <div className="bg-[#151f2e] p-4 rounded-lg">
+                      <div className="bg-[#0F1520] p-4 rounded-lg">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-medium text-gray-400">Contracts</h4>
-                          <span className="text-2xl font-bold text-white">{client.contracts?.length || 0}</span>
+                          <h4 className="text-sm font-medium text-gray-400">Total Views Generated</h4>
+                          <span className="text-2xl font-bold text-white">24.3K</span>
                         </div>
-                        <div className="w-full bg-[#111827] rounded-full h-1">
-                          <div className="bg-green-500 h-1 rounded-full" style={{ width: `${Math.min((client.contracts?.length || 0) * 20, 100)}%` }}></div>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-[#151f2e] p-4 rounded-lg">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-sm font-medium text-gray-400">Client Status</h4>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${
-                            client.status === 'active' 
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {client.status === 'active' ? 'Active' : 'Inactive'}
-                          </div>
+                        <div className="w-full bg-[#1D2939] rounded-full h-1.5">
+                          <div className="bg-[#FF4F01]/80 h-1.5 rounded-full" style={{ width: `75%` }}></div>
                         </div>
                       </div>
                       
-                      <div className="bg-[#151f2e] p-4 rounded-lg">
+                      <div className="bg-[#0F1520] p-4 rounded-lg">
                         <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-sm font-medium text-gray-400">Current Plan</h4>
+                          <h4 className="text-sm font-medium text-gray-400">Monthly Growth</h4>
+                          <span className="text-md font-medium text-[#66BB6A]">+18.7%</span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <div className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${
-                            client.plan === 'creator' 
-                              ? 'bg-blue-500/20 text-blue-400'
-                              : 'bg-purple-500/20 text-purple-400'
-                          }`}>
-                            {client.plan === 'creator' ? 'Creator Plan' : 'Studio Plan'}
-                          </div>
+                        <div className="w-full bg-[#1D2939] rounded-full h-1.5 mt-2">
+                          <div className="bg-[#FF4F01]/60 h-1.5 rounded-full" style={{ width: `30%` }}></div>
                         </div>
                       </div>
                     </div>
@@ -624,10 +608,10 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
                 </div>
                 
                 {/* Notes section */}
-                <div className="bg-[#1a2233] rounded-xl border border-[#2a3347] overflow-hidden shadow-lg">
-                  <div className="px-5 py-4 border-b border-[#2a3347] flex justify-between items-center">
+                <div className="bg-[#151C2C] rounded-xl border border-[#2A354C] overflow-hidden shadow-lg mt-6">
+                  <div className="px-5 py-4 border-b border-[#2A354C] flex justify-between items-center">
                     <h3 className="text-lg font-medium text-white">Notes</h3>
-                    <button className="text-blue-400 hover:text-blue-300 text-sm flex items-center">
+                    <button className="text-[#FF4F01] hover:text-[#FF7E3D] text-sm flex items-center transition-colors duration-200">
                       <FiEdit2 className="h-3.5 w-3.5 mr-1" />
                       Edit
                     </button>
@@ -635,19 +619,19 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
                   
                   <div className="p-5">
                     {client.notes ? (
-                      <div className="bg-[#151f2e] p-5 rounded-lg border border-[#2a3347] text-gray-300 text-sm leading-relaxed">
+                      <div className="bg-[#0F1520] p-5 rounded-lg border border-[#2A354C] text-gray-300 text-sm leading-relaxed">
                         {client.notes}
                       </div>
                     ) : (
                       <div className="py-10 flex flex-col items-center justify-center">
-                        <div className="h-16 w-16 bg-[#151f2e] rounded-full flex items-center justify-center mb-3">
+                        <div className="h-16 w-16 bg-[#0F1520] rounded-full flex items-center justify-center mb-3">
                           <FiFileText className="h-8 w-8 text-gray-500" />
                         </div>
                         <p className="text-gray-400 font-medium mb-2">No notes available</p>
                         <p className="text-sm text-gray-500 mb-4 max-w-md text-center">
                           Add notes about this client to keep track of important information and reminders.
                         </p>
-                        <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none transition-colors duration-150">
+                        <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#FF4F01] hover:bg-[#FF4F01]/90 focus:outline-none transition-colors duration-200">
                           <FiPlus className="mr-2 -ml-1 h-4 w-4" />
                           Add Notes
                         </button>
