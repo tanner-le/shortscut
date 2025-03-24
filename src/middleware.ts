@@ -20,6 +20,10 @@ const protectedRoutes = [
 const adminRoutes = [
   '/admin',
   '/admin/dashboard',
+  '/admin/clients',
+  '/admin/users',
+  '/admin/settings',
+  '/admin/analytics',
 ];
 
 /**
@@ -77,9 +81,11 @@ export async function middleware(request: NextRequest) {
       return res;
     }
 
-    // Special case for /admin/dashboard - let the client component handle auth
-    if (pathname === '/admin/dashboard') {
-      console.log('[Middleware] Allowing admin dashboard to handle auth client-side');
+    // Special case for admin routes that handle auth client-side
+    if (pathname === '/admin/dashboard' || 
+        pathname.match(/^\/admin\/clients\/[^\/]+$/) ||
+        pathname.match(/^\/admin\/clients\/[^\/]+\/team$/)) {
+      console.log('[Middleware] Allowing admin page to handle auth client-side:', pathname);
       return res;
     }
 

@@ -6,28 +6,65 @@ import { prisma } from '@/lib/prisma';
 function getClientId(request: NextRequest) {
   const url = new URL(request.url);
   const pathParts = url.pathname.split('/');
-  return pathParts[pathParts.length - 1];
+  const id = pathParts[pathParts.length - 1];
+  console.log(`Extracted client ID from URL: ${id}`);
+  return id;
 }
 
 // GET /api/clients/[id] - Get client by ID
 export async function GET(request: NextRequest) {
   try {
     const clientId = getClientId(request);
+    console.log(`API: Fetching client with ID: ${clientId}`);
     
-    // Fetch client with Prisma
-    const client = await prisma.client.findUnique({
+    // Optionally verify authorization if needed
+    const authHeader = request.headers.get('authorization');
+    
+    // In a real implementation, you might validate the token here
+    // For now, we'll just log it
+    if (authHeader) {
+      console.log('API: Request includes Authorization header');
+    }
+    
+    // Fetch client with Prisma, including related data
+    const client = await prisma.organization.findUnique({
       where: { id: clientId },
-      include: { contracts: true } // Include associated contracts
+      include: { 
+        contracts: true, // Include associated contracts
+        users: true, // Include all user fields
+        invitations: {
+          where: { status: 'pending' },
+        }
+      }
     });
     
+    console.log('API: Raw database response:', JSON.stringify(client, null, 2));
+    
     if (!client) {
+      console.log(`API: Client with ID ${clientId} not found`);
       return errorResponse('Client not found', HTTP_STATUS.NOT_FOUND);
     }
     
-    return successResponse(client, 'Client retrieved successfully');
+    // Transform the client data to match the expected format
+    const transformedClient = {
+      ...client,
+      // Ensure any missing fields are properly set
+      plan: client.plan || 'creator',
+      status: client.status || 'active',
+      code: client.code || '12345',
+      users: client.users || [],
+      invitations: client.invitations || [],
+      contracts: client.contracts || []
+    };
+    
+    console.log(`API: Successfully retrieved client ${client.name}`);
+    return successResponse(transformedClient, 'Client retrieved successfully');
   } catch (error) {
-    console.error('Error retrieving client:', error);
-    return errorResponse('Failed to retrieve client', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+    console.error('API: Error retrieving client:', error);
+    return errorResponse(
+      `Failed to retrieve client: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+      HTTP_STATUS.INTERNAL_SERVER_ERROR
+    );
   }
 }
 
@@ -37,7 +74,7 @@ export async function PUT(request: NextRequest) {
     const clientId = getClientId(request);
     
     // Check if client exists
-    const existingClient = await prisma.client.findUnique({
+    const existingClient = await prisma.organization.findUnique({
       where: { id: clientId }
     });
     
@@ -49,7 +86,7 @@ export async function PUT(request: NextRequest) {
     
     // Check for email uniqueness if email is being changed
     if (body.email && body.email !== existingClient.email) {
-      const duplicateEmail = await prisma.client.findFirst({
+      const duplicateEmail = await prisma.organization.findFirst({
         where: { 
           email: body.email,
           id: { not: clientId }
@@ -73,9 +110,10 @@ export async function PUT(request: NextRequest) {
     if (body.address !== undefined) updateData.address = body.address;
     if (body.notes !== undefined) updateData.notes = body.notes;
     if (body.status !== undefined) updateData.status = body.status;
+    if (body.plan !== undefined) updateData.plan = body.plan;
     
     // Update client with Prisma
-    const updatedClient = await prisma.client.update({
+    const updatedClient = await prisma.organization.update({
       where: { id: clientId },
       data: updateData
     });
@@ -93,7 +131,7 @@ export async function DELETE(request: NextRequest) {
     const clientId = getClientId(request);
     
     // Check if client exists
-    const existingClient = await prisma.client.findUnique({
+    const existingClient = await prisma.organization.findUnique({
       where: { id: clientId }
     });
     
@@ -103,7 +141,7 @@ export async function DELETE(request: NextRequest) {
     
     // Check if client has any contracts
     const clientContracts = await prisma.contract.findMany({
-      where: { clientId }
+      where: { organizationId: clientId }
     });
     
     if (clientContracts.length > 0) {
@@ -114,7 +152,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Delete client with Prisma
-    await prisma.client.delete({
+    await prisma.organization.delete({
       where: { id: clientId }
     });
     

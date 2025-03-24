@@ -1,12 +1,13 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   FiHome, FiUsers, FiBriefcase, FiSettings, FiMenu, FiX,
-  FiActivity, FiLogOut, FiBell, FiSearch, FiMoon
+  FiActivity, FiLogOut, FiBell, FiSearch, FiMoon, FiLoader
 } from 'react-icons/fi';
+import { createBrowserSupabaseClient } from '@/lib/supabase';
 
 /**
  * Props for the AdminDashboardLayout component
@@ -26,10 +27,68 @@ type AdminDashboardLayoutProps = {
  */
 export default function AdminDashboardLayout({ children }: AdminDashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userName, setUserName] = useState('Admin');
+  const [userInitial, setUserInitial] = useState('A');
   const pathname = usePathname();
+  const router = useRouter();
+
+  // Check authentication on layout mount
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        // Check authentication
+        const supabase = createBrowserSupabaseClient();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError || !session || !session.user) {
+          console.error('No valid session');
+          router.push('/login');
+          return;
+        }
+
+        // Verify admin role
+        const user = session.user;
+        const role = user.user_metadata?.role || user.role;
+        
+        if (role !== 'admin') {
+          console.log('User is not an admin, redirecting to dashboard');
+          router.push('/dashboard');
+          return;
+        }
+
+        // Set user information for display
+        if (user.user_metadata?.name) {
+          setUserName(user.user_metadata.name);
+          setUserInitial(user.user_metadata.name.charAt(0).toUpperCase());
+        } else if (user.email) {
+          setUserName(user.email.split('@')[0]);
+          setUserInitial(user.email.charAt(0).toUpperCase());
+        }
+        
+        setIsAuthChecking(false);
+      } catch (err) {
+        console.error('Auth check error:', err);
+        router.push('/login');
+      }
+    }
+
+    checkAuth();
+  }, [router]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      const supabase = createBrowserSupabaseClient();
+      await supabase.auth.signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   // Navigation items for the sidebar
@@ -39,6 +98,18 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
     { name: 'Users', href: '/admin/users', icon: FiUsers },
     { name: 'Settings', href: '/admin/settings', icon: FiSettings },
   ];
+
+  // If still checking authentication, show loading screen
+  if (isAuthChecking) {
+    return (
+      <div className="flex h-screen bg-[#111827] items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 rounded-full border-t-2 border-b-2 border-blue-500 animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-400">Verifying authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#111827] overflow-hidden">
@@ -138,13 +209,13 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
           
           {/* Logout button - push to bottom */}
           <div className="mt-auto px-2 pt-4 border-t border-[#2a3347]">
-            <Link
-              href="/logout"
-              className="flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-[#2a3347] hover:text-white transition-colors"
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-[#2a3347] hover:text-white transition-colors"
             >
               <FiLogOut className="mr-3 h-5 w-5 flex-shrink-0 text-gray-400" aria-hidden="true" />
               Logout
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -191,7 +262,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
                   className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm"
                   aria-label="User profile"
                 >
-                  A
+                  {userInitial}
                 </div>
               </div>
             </div>

@@ -5,6 +5,7 @@ import { FiPlus, FiEdit2, FiEye, FiUsers, FiRefreshCw, FiFilter, FiChevronDown, 
 import Link from 'next/link';
 import { Client } from '@/types/client';
 import CreateOrganizationModal from './CreateOrganizationModal';
+import EditClientModal from '../clients/EditClientModal';
 
 /**
  * ClientList component displays a list of clients with filtering and management capabilities.
@@ -24,6 +25,8 @@ export default function ClientList() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   /**
    * Fetches clients from the API with optional status filtering
@@ -42,6 +45,7 @@ export default function ClientList() {
       }
       
       const data = await response.json();
+      console.log('Client list data:', data);
       setClients(data.data || []);
     } catch (err: any) {
       console.error('Error fetching clients:', err);
@@ -85,6 +89,42 @@ export default function ClientList() {
       console.error('Error creating organization:', error);
       throw new Error('Unable to create organization. Please try again.');
     }
+  };
+
+  // Handle client update
+  const handleUpdateClient = async (id: string, data: any) => {
+    try {
+      const response = await fetch(`/api/clients/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update client');
+      }
+
+      const result = await response.json();
+      
+      // Update the client in the list
+      setClients(clients.map(client => 
+        client.id === id ? { ...client, ...result.data } : client
+      ));
+      
+      // Show success notification
+      alert('Client updated successfully!');
+    } catch (error: any) {
+      console.error('Error updating client:', error);
+      throw new Error('Unable to update client. Please try again.');
+    }
+  };
+
+  // Open edit modal with selected client
+  const openEditModal = (client: Client) => {
+    setSelectedClient(client);
+    setIsEditModalOpen(true);
   };
 
   // Loading state
@@ -342,14 +382,14 @@ export default function ClientList() {
                       >
                         <FiEye className="h-4 w-4" aria-hidden="true" />
                       </Link>
-                      <Link
-                        href={`/admin/clients/${client.id}/edit`}
+                      <button
+                        onClick={() => openEditModal(client)}
                         className="p-1.5 rounded-md text-blue-400 hover:text-white hover:bg-blue-500/20 transition-colors"
                         title="Edit Client"
                         aria-label={`Edit ${client.company}`}
                       >
                         <FiEdit2 className="h-4 w-4" aria-hidden="true" />
-                      </Link>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -364,6 +404,14 @@ export default function ClientList() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateOrganization}
+      />
+
+      {/* Client Edit Modal */}
+      <EditClientModal
+        client={selectedClient}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleUpdateClient}
       />
     </div>
   );
