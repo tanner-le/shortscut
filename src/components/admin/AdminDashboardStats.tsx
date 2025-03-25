@@ -20,7 +20,6 @@ type OrganizationFormData = {
 type StatsData = {
   totalOrganizations: number;
   totalUsers: number;
-  activeInvitations: number;
   recentRegistrations: number;
 };
 
@@ -28,7 +27,6 @@ export default function AdminDashboardStats() {
   const [stats, setStats] = useState<StatsData>({
     totalOrganizations: 0,
     totalUsers: 0,
-    activeInvitations: 0,
     recentRegistrations: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +54,6 @@ export default function AdminDashboardStats() {
         setStats({
           totalOrganizations: 0,
           totalUsers: 0,
-          activeInvitations: 0,
           recentRegistrations: 0,
         });
       }
@@ -108,12 +105,6 @@ export default function AdminDashboardStats() {
       value: stats.totalUsers,
       icon: FiUsers,
       iconColor: 'bg-green-100 text-green-600',
-    },
-    {
-      title: 'Active Invitations',
-      value: stats.activeInvitations,
-      icon: FiClock,
-      iconColor: 'bg-yellow-100 text-yellow-600',
     },
     {
       title: 'Recent Registrations',

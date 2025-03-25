@@ -32,9 +32,6 @@ export async function GET(request: NextRequest) {
       include: { 
         projects: true, // Include associated projects
         users: true, // Include all user fields
-        invitations: {
-          where: { status: 'pending' },
-        }
       }
     });
     
@@ -53,7 +50,6 @@ export async function GET(request: NextRequest) {
       status: client.status || 'active',
       code: client.code || '12345',
       users: client.users || [],
-      invitations: client.invitations || [],
       projects: client.projects || []
     };
     

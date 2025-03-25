@@ -77,11 +77,6 @@ export const organizationService = {
             phoneNumber: true
           }
         },
-        invitations: {
-          where: {
-            status: 'pending'
-          }
-        },
         projects: true
       }
     })
@@ -111,11 +106,6 @@ export const organizationService = {
 
   // Delete an organization
   delete: async (id: string) => {
-    // First delete all invitations for this organization
-    await prisma.invitation.deleteMany({
-      where: { organizationId: id }
-    })
-    
     // Update all users to remove organization connection
     await prisma.user.updateMany({
       where: { organizationId: id },

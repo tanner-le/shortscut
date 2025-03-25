@@ -66,33 +66,7 @@ model Organization {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   users       User[]            /// Users associated with this organization
-  invitations Invitation[]      /// Pending invitations to join
   projects    Project[]         /// Projects associated with this organization
-  
-  @@schema("public")
-}
-
-// Invitation model
-model Invitation {
-  id             String           @id @default(uuid())
-  email          String
-  name           String
-  role           UserRole
-  organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id])
-  token          String           @unique
-  status         InvitationStatus
-  expiresAt      DateTime
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  
-  @@schema("public")
-}
-
-enum InvitationStatus {
-  pending
-  accepted
-  expired
   
   @@schema("public")
 }

@@ -26,20 +26,9 @@ interface TeamMember {
   createdAt: string;
 }
 
-// Type definitions for pending invitations
-interface Invitation {
-  id: string;
-  email: string;
-  name: string;
-  role: 'client' | 'teamMember';
-  status: 'pending';
-  expiresAt: string;
-}
-
 // Extended client type to include the properties we use
 interface ExtendedClient extends Client {
   users?: TeamMember[];
-  invitations?: Invitation[];
   contracts?: any[];
 }
 
@@ -77,7 +66,6 @@ interface Conversation {
 export default function ViewClientPage({ params }: { params: { id: string } }) {
   const [client, setClient] = useState<ExtendedClient | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('details');
   const [error, setError] = useState<string | null>(null);
@@ -136,7 +124,6 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
         // Extract the data and handle potential missing properties
         setClient(clientData);
         setTeamMembers(Array.isArray(clientData.users) ? clientData.users : []);
-        setInvitations(Array.isArray(clientData.invitations) ? clientData.invitations : []);
         
         debug.log('Client state set successfully');
       } catch (err: any) {
@@ -157,10 +144,10 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
   }, [id]);
 
   // Format date for display
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | Date) => {
     if (!dateString) return 'N/A';
     try {
-      const date = new Date(dateString);
+      const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
       return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -173,10 +160,10 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
   };
 
   // Calculate time since client joined
-  const getTimeSinceJoined = (dateString: string) => {
+  const getTimeSinceJoined = (dateString: string | Date) => {
     if (!dateString) return 'Unknown';
     try {
-      const date = new Date(dateString);
+      const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
       return formatDistanceToNow(date, { addSuffix: true });
     } catch (err) {
       console.error('Error calculating time since joined:', err);
@@ -842,68 +829,6 @@ export default function ViewClientPage({ params }: { params: { id: string } }) {
                           <FiPlus className="mr-2 -ml-1 h-4 w-4" />
                           Invite New Member
                         </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Pending Invitations */}
-                <div className="bg-[#1a2233] rounded-lg border border-[#2a3347] overflow-hidden mt-4 fade-in" style={{ animationDelay: '400ms' }}>
-                  <div className="px-4 py-3 border-b border-[#2a3347] flex justify-between items-center">
-                    <h3 className="text-lg font-medium text-white">Pending Invitations</h3>
-                    <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">
-                      {invitations.length}
-                    </span>
-                  </div>
-                  
-                  <div className="overflow-x-auto">
-                    {invitations.length > 0 ? (
-                      <table className="min-w-full divide-y divide-[#2a3347]">
-                        <thead className="bg-[#151f2e]">
-                          <tr>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Expires</th>
-                            <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#2a3347]">
-                          {invitations.map((invitation) => (
-                            <tr key={invitation.id} className="hover:bg-[#151f2e]">
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  <div className="h-8 w-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
-                                    <FiMail className="h-4 w-4" />
-                                  </div>
-                                  <div className="ml-3">
-                                    <div className="text-sm font-medium text-white">{invitation.name}</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{invitation.email}</td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                                  invitation.role === 'client' 
-                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-400'
-                                    : 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400'
-                                }`}>
-                                  {invitation.role}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
-                                {formatDate(invitation.expiresAt)}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                                <button className="text-red-400 hover:text-red-300">Cancel</button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    ) : (
-                      <div className="px-4 py-8 text-center">
-                        <p className="text-sm text-gray-400">No pending invitations</p>
                       </div>
                     )}
                   </div>

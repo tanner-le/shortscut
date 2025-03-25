@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
     const mockStats = {
       totalOrganizations: 5,
       totalUsers: 12,
-      activeInvitations: 3,
       recentRegistrations: 2,
     };
     
