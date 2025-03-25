@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, UserRole, OrganizationPlan, ClientStatus, ProjectStatus } from '@prisma/client'
 import { hash } from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -10,122 +10,72 @@ const generateRandomCode = () =>
 async function main() {
   console.log('Starting seed...')
 
-  // Create users
+  // Create admin user (without organization)
   const adminPassword = await hash('admin123', 10)
-  const userPassword = await hash('user123', 10)
-
   const admin = await prisma.user.upsert({
-    where: { id: '1' },
+    where: { id: '00000000-0000-0000-0000-000000000000' },
     update: {},
     create: {
-      id: '1',
+      id: '00000000-0000-0000-0000-000000000000',
       name: 'Admin User',
-      role: 'admin',
-    },
+      role: UserRole.admin,
+      phoneNumber: '+1234567890'
+    }
   })
+  console.log('Admin user created:', admin.id)
 
-  const user = await prisma.user.upsert({
-    where: { id: '2' },
+  // Create sample organization
+  const organization = await prisma.organization.upsert({
+    where: { code: '12345' },
     update: {},
     create: {
-      id: '2',
-      name: 'Regular User',
-      role: 'teamMember',
-    },
-  })
-
-  console.log('Created users:', { admin, user })
-
-  // Create organizations
-  const acme = await prisma.organization.upsert({
-    where: { id: '1' },
-    update: {},
-    create: {
-      id: '1',
-      code: generateRandomCode(),
-      name: 'Acme Corporation',
-      email: 'contact@acme.com',
-      phone: '555-123-4567',
-      company: 'Acme Corporation',
+      code: '12345',
+      name: 'Sample Client',
+      company: 'Sample Company LLC',
       industry: 'Technology',
-      address: '123 Main St, City, State, 12345',
-      notes: 'Key client since 2022.',
-      status: 'active',
-      plan: 'creator'
-    },
+      plan: OrganizationPlan.studio,
+      status: ClientStatus.active
+    }
   })
+  console.log('Sample organization created:', organization.id)
 
-  const globallabs = await prisma.organization.upsert({
-    where: { id: '2' },
+  // Create client user for the organization
+  const userPassword = await hash('user123', 10)
+  const clientUser = await prisma.user.upsert({
+    where: { id: '00000000-0000-0000-0000-000000000001' },
     update: {},
     create: {
-      id: '2',
-      code: generateRandomCode(),
-      name: 'Global Labs',
-      email: 'info@globallabs.com',
-      phone: '555-987-6543',
-      company: 'Global Labs',
-      industry: 'Research',
-      address: '456 Science Blvd, City, State, 67890',
-      notes: 'Interested in expanding social media presence.',
-      status: 'active',
-      plan: 'studio'
-    },
+      id: '00000000-0000-0000-0000-000000000001',
+      name: 'Client User',
+      role: UserRole.client,
+      organizationId: organization.id,
+      phoneNumber: '+1987654321'
+    }
   })
+  console.log('Client user created:', clientUser.id)
 
-  console.log('Created organizations:', { acme, globallabs })
-
-  // Create contracts
-  const contract1 = await prisma.contract.upsert({
-    where: { id: '1' },
-    update: {},
-    create: {
-      id: '1',
-      title: 'Social Media Campaign',
-      organizationId: '1',
-      packageType: 'creator',
-      startDate: new Date('2023-01-15'),
-      endDate: new Date('2023-03-15'),
-      totalMonths: 2,
-      syncCallDay: 15,
-      value: 5000,
-      status: 'active',
-      description: 'Comprehensive social media campaign across multiple platforms.',
-      terms: 'Payment due within 30 days of invoice.',
-      files: [],
-    },
+  // Create sample project
+  const project = await prisma.project.create({
+    data: {
+      title: 'Sample Video Project',
+      organizationId: organization.id,
+      description: 'A sample video project for demonstration',
+      startDate: new Date(),
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days later
+      status: 'writing' as ProjectStatus // Using the new project status
+    }
   })
+  console.log('Sample project created:', project.id)
 
-  const contract2 = await prisma.contract.upsert({
-    where: { id: '2' },
-    update: {},
-    create: {
-      id: '2',
-      title: 'Brand Refresh',
-      organizationId: '2',
-      packageType: 'studio',
-      startDate: new Date('2023-02-01'),
-      endDate: new Date('2023-04-01'),
-      totalMonths: 2,
-      syncCallDay: 1,
-      value: 7500,
-      status: 'active',
-      description: 'Complete brand refresh including content strategy and execution.',
-      terms: 'Payment in three installments.',
-      files: [],
-    },
-  })
-
-  console.log('Created contracts:', { contract1, contract2 })
-
-  console.log('Seed completed.')
+  console.log('Seed completed successfully.')
 }
 
 main()
-  .catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
-  .finally(async () => {
+  .then(async () => {
     await prisma.$disconnect()
+  })
+  .catch(async (e) => {
+    console.error('Error during seeding:', e)
+    await prisma.$disconnect()
+    process.exit(1)
   }) 

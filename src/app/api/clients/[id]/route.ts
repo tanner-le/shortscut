@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const client = await prisma.organization.findUnique({
       where: { id: clientId },
       include: { 
-        contracts: true, // Include associated contracts
+        projects: true, // Include associated projects
         users: true, // Include all user fields
         invitations: {
           where: { status: 'pending' },
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       code: client.code || '12345',
       users: client.users || [],
       invitations: client.invitations || [],
-      contracts: client.contracts || []
+      projects: client.projects || []
     };
     
     console.log(`API: Successfully retrieved client ${client.name}`);
@@ -139,14 +139,14 @@ export async function DELETE(request: NextRequest) {
       return errorResponse('Client not found', HTTP_STATUS.NOT_FOUND);
     }
     
-    // Check if client has any contracts
-    const clientContracts = await prisma.contract.findMany({
+    // Check if client has any projects
+    const clientProjects = await prisma.project.findMany({
       where: { organizationId: clientId }
     });
     
-    if (clientContracts.length > 0) {
+    if (clientProjects.length > 0) {
       return errorResponse(
-        'Cannot delete client with existing contracts. Please delete associated contracts first.',
+        'Cannot delete client with existing projects. Please delete associated projects first.',
         HTTP_STATUS.BAD_REQUEST
       );
     }

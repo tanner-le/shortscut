@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import AdminDashboardLayout from '@/components/admin/AdminDashboardLayout';
 import ClientList from '@/components/admin/ClientList';
+import ProjectList from '@/components/admin/ProjectList';
 import { FiAlertCircle, FiUsers, FiBriefcase, FiCalendar, FiLogIn } from 'react-icons/fi';
 
 /**
@@ -16,6 +17,7 @@ import { FiAlertCircle, FiUsers, FiBriefcase, FiCalendar, FiLogIn } from 'react-
  * - Authentication checks to ensure only admin users can access
  * - Overview statistics (clients, projects, team members)
  * - Client management through ClientList component
+ * - Project management through ProjectList component
  * 
  * @returns {JSX.Element} The rendered admin dashboard page
  */
@@ -128,8 +130,11 @@ export default function AdminDashboardPage() {
           </div>
         </div>
         
-        {/* Client Management Section */}
+        {/* Project Management Section */}
         <div className="space-y-6">
+          <ProjectList />
+          
+          {/* Client Management Section */}
           <ClientList />
         </div>
       </div>

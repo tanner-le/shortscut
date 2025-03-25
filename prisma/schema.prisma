@@ -50,7 +50,7 @@ enum OrganizationPlan {
 }
 
 /// Organization model representing client companies
-/// Acts as a container for users and contracts
+/// Acts as a container for users and projects
 model Organization {
   id          String            @id @default(uuid())
   code        String            @unique /// 5-digit unique organization code
@@ -67,7 +67,7 @@ model Organization {
   updatedAt   DateTime          @updatedAt
   users       User[]            /// Users associated with this organization
   invitations Invitation[]      /// Pending invitations to join
-  contracts   Contract[]        /// Contracts with this organization
+  projects    Project[]         /// Projects associated with this organization
   
   @@schema("public")
 }
@@ -104,70 +104,29 @@ enum ClientStatus {
   @@schema("public")
 }
 
-// Contract model
-model Contract {
-  id             String         @id @default(uuid())
-  title          String
-  organizationId String
-  organization   Organization   @relation(fields: [organizationId], references: [id])
-  packageType    PackageType
-  startDate      DateTime
-  endDate        DateTime?
-  totalMonths    Int?
-  syncCallDay    Int?
-  value          Float
-  status         ContractStatus
-  description    String?
-  terms          String?
-  files          String[]
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  projects       Project[]
-  
-  @@schema("public")
-}
-
-enum PackageType {
-  creator
-  studio
-  
-  @@schema("public")
-}
-
-enum ContractStatus {
-  draft
-  sent
-  signed
-  active
-  completed
-  cancelled
-  
-  @@schema("public")
-}
-
 // Project model
 model Project {
-  id          String        @id @default(uuid())
-  name        String
-  contractId  String
-  contract    Contract      @relation(fields: [contractId], references: [id])
-  clientId    String
-  description String?
-  startDate   DateTime
-  dueDate     DateTime?
-  status      ProjectStatus
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id             String        @id @default(uuid())
+  title          String
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  description    String?
+  startDate      DateTime
+  dueDate        DateTime?
+  status         ProjectStatus
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
   
   @@schema("public")
 }
 
 enum ProjectStatus {
-  planning
-  in_progress @map("in-progress")
-  review
-  completed
-  on_hold     @map("on-hold")
+  not_started   @map("not-started")
+  writing
+  filming
+  editing
+  revising
+  delivered
   
   @@schema("public")
 }

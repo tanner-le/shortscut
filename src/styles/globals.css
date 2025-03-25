@@ -1,0 +1,59 @@
+/* Add this to support smooth scrolling across all browsers */
+
+/* Enhanced scrolling behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Smooth scrolling container */
+.scroll-smooth-container {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* Better momentum scrolling on iOS */
+  overflow-x: auto;
+  scroll-snap-type: x mandatory; /* Enable snap points for card items */
+}
+
+/* Snap points for cards */
+.scroll-snap-item {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* Custom scrollbar styling */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Custom scroll indicator animations */
+.scroll-indicator-left {
+  animation: pulseLeft 2s infinite;
+}
+
+.scroll-indicator-right {
+  animation: pulseRight 2s infinite;
+}
+
+@keyframes pulseLeft {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-3px); }
+}
+
+@keyframes pulseRight {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+
+/* Custom card hover effect */
+.project-card {
+  transition: all 0.3s ease;
+}
+
+.project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+} 

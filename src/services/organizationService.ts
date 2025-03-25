@@ -51,14 +51,13 @@ export const organizationService = {
           select: {
             id: true,
             name: true,
-            email: true,
             role: true
           }
         },
         _count: {
           select: {
             users: true,
-            contracts: true
+            projects: true
           }
         }
       }
@@ -74,7 +73,6 @@ export const organizationService = {
           select: {
             id: true,
             name: true,
-            email: true,
             role: true,
             phoneNumber: true
           }
@@ -83,7 +81,8 @@ export const organizationService = {
           where: {
             status: 'pending'
           }
-        }
+        },
+        projects: true
       }
     })
   },
@@ -138,7 +137,6 @@ export const organizationService = {
       select: {
         id: true,
         name: true,
-        email: true,
         role: true,
         phoneNumber: true,
         createdAt: true

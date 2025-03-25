@@ -200,7 +200,7 @@ export default function ClientList() {
             </p>
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-[#FF4F01] hover:bg-[#FF4F01]/90 transition-all duration-200 shadow-sm"
               aria-label="Create your first client"
             >
               <FiPlus className="mr-1.5 -ml-0.5 h-4 w-4" aria-hidden="true" />
@@ -260,7 +260,7 @@ export default function ClientList() {
             </button>
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-[#FF4F01] hover:bg-[#FF4F01]/90 transition-all duration-200 shadow-sm"
               aria-label="Add new client"
             >
               <FiPlus className="mr-1.5 -ml-0.5 h-4 w-4" aria-hidden="true" />
@@ -282,7 +282,7 @@ export default function ClientList() {
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-[#FF4F01] hover:bg-[#FF4F01]/90 transition-all duration-200 shadow-sm"
             aria-label="Create your first client"
           >
             <FiPlus className="mr-1.5 -ml-0.5 h-4 w-4" aria-hidden="true" />
