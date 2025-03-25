@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiFilter, FiSearch, FiPlus, FiArrowRight, FiCalendar, FiUser, FiClock } from 'react-icons/fi';
+import { FiFilter, FiSearch, FiPlus, FiArrowRight, FiCalendar, FiUser, FiClock, FiChevronDown, FiSliders } from 'react-icons/fi';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import Link from 'next/link';
 import ProjectDetailModal from './ProjectDetailModal';
@@ -34,6 +34,39 @@ const getStatusStyles = (status: ProjectStatus) => {
       return 'bg-green-100 text-green-800';
     default:
       return 'bg-gray-100 text-gray-800';
+  }
+};
+
+// Helper to get status color styles for dark mode
+const getStatusDarkStyles = (status: ProjectStatus) => {
+  switch (status) {
+    case 'not_started':
+      return 'bg-gray-500/10 text-gray-400 hover:bg-gray-500/20';
+    case 'writing':
+      return 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20';
+    case 'filming':
+      return 'bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20';
+    case 'editing':
+      return 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20';
+    case 'revising':
+      return 'bg-orange-500/10 text-orange-400 hover:bg-orange-500/20';
+    case 'delivered':
+      return 'bg-green-500/10 text-green-400 hover:bg-green-500/20';
+    default:
+      return 'bg-gray-500/10 text-gray-400 hover:bg-gray-500/20';
+  }
+};
+
+// Helper to get status color for badges and indicators
+const getStatusBadgeColor = (status: ProjectStatus) => {
+  switch (status) {
+    case 'not_started': return 'bg-gray-400';
+    case 'writing': return 'bg-blue-400';
+    case 'filming': return 'bg-yellow-400';
+    case 'editing': return 'bg-purple-400';
+    case 'revising': return 'bg-orange-400';
+    case 'delivered': return 'bg-green-400';
+    default: return 'bg-gray-400';
   }
 };
 
@@ -85,6 +118,18 @@ export default function ProjectList() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [organizations, setOrganizations] = useState<Record<string, any>>({});
   const [activeSection, setActiveSection] = useState(0);
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+
+  // Calculate status counts
+  const statusCounts = {
+    all: projects.length,
+    not_started: projects.filter(p => p.status === 'not_started').length,
+    writing: projects.filter(p => p.status === 'writing').length,
+    filming: projects.filter(p => p.status === 'filming').length,
+    editing: projects.filter(p => p.status === 'editing').length,
+    revising: projects.filter(p => p.status === 'revising').length,
+    delivered: projects.filter(p => p.status === 'delivered').length,
+  };
 
   // Fetch projects and organizations
   useEffect(() => {
@@ -113,6 +158,7 @@ export default function ProjectList() {
           return acc;
         }, {});
         
+        console.log('Fetched organizations:', orgsData.data);
         setOrganizations(orgsMap);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -174,6 +220,35 @@ export default function ProjectList() {
       throw error;
     }
   };
+  
+  // Handle project deletion
+  const handleProjectDelete = async (projectId: string) => {
+    try {
+      const updatedProjects = projects.filter(project => project.id !== projectId);
+      setProjects(updatedProjects);
+      setShowModal(false);
+    } catch (error) {
+      console.error('Error handling project deletion:', error);
+    }
+  };
+  
+  // Handle project status change
+  const handleProjectStatusChange = async (projectId: string, newStatus: ProjectStatus) => {
+    try {
+      // Update local state
+      const updatedProjects = projects.map(project => 
+        project.id === projectId ? { ...project, status: newStatus } : project
+      );
+      setProjects(updatedProjects);
+      
+      // If the selected project is the one being updated, update it too
+      if (selectedProject && selectedProject.id === projectId) {
+        setSelectedProject({ ...selectedProject, status: newStatus });
+      }
+    } catch (error) {
+      console.error('Error handling project status change:', error);
+    }
+  };
 
   const openProjectModal = (project: Project) => {
     setSelectedProject(project);
@@ -205,6 +280,29 @@ export default function ProjectList() {
     }
     
     return null;
+  };
+
+  // Refresh projects after a successful action
+  const refreshProjects = async () => {
+    try {
+      const projectsResponse = await fetch('/api/projects');
+      if (!projectsResponse.ok) {
+        throw new Error('Failed to refresh projects');
+      }
+      const projectsData = await projectsResponse.json();
+      const updatedProjects = projectsData.data || [];
+      setProjects(updatedProjects);
+      
+      // If there's a selected project, update it with the latest data
+      if (selectedProject) {
+        const updatedSelectedProject = updatedProjects.find((p: Project) => p.id === selectedProject.id);
+        if (updatedSelectedProject) {
+          setSelectedProject(updatedSelectedProject);
+        }
+      }
+    } catch (err) {
+      console.error('Error refreshing projects:', err);
+    }
   };
 
   // Trigger a subtle scroll animation on initial render to indicate scrollability
@@ -279,34 +377,47 @@ export default function ProjectList() {
           <div className="flex items-center w-full sm:w-auto gap-2">
             <div className="relative flex-1 sm:flex-none">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiSearch className="text-gray-400" />
+                <FiSearch className="h-3.5 w-3.5 text-gray-400" />
               </div>
               <input
                 type="text"
                 placeholder="Search projects..."
-                className="pl-10 pr-4 py-2 rounded-md bg-[#111827] border border-gray-700 text-white text-sm focus:ring-blue-500 focus:border-blue-500 block w-full"
+                className="pl-9 pr-4 py-1.5 rounded-md bg-[#2a3347] border border-[#3b4559] text-white text-sm focus:ring-blue-500 focus:border-blue-500 block w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiFilter className="text-gray-400" />
+              <div className="flex items-center">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FiFilter className="h-3.5 w-3.5 text-gray-400" />
+                </div>
+                <select
+                  id="status-filter"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="bg-[#2a3347] pl-9 pr-8 py-1.5 text-sm text-gray-200 rounded-md border border-[#3b4559] appearance-none focus:outline-none"
+                  aria-label="Filter projects by status"
+                >
+                  <option value="all">All Projects</option>
+                  <option value="not_started">Not Started</option>
+                  <option value="writing">Writing</option>
+                  <option value="filming">Filming</option>
+                  <option value="editing">Editing</option>
+                  <option value="revising">Revising</option>
+                  <option value="delivered">Delivered</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <FiChevronDown className="h-3.5 w-3.5 text-gray-400" />
+                </div>
               </div>
-              <select
-                className="pl-10 pr-4 py-2 rounded-md bg-[#111827] border border-gray-700 text-white text-sm focus:ring-blue-500 focus:border-blue-500"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Statuses</option>
-                <option value="not_started">Not Started</option>
-                <option value="writing">Writing</option>
-                <option value="filming">Filming</option>
-                <option value="editing">Editing</option>
-                <option value="revising">Revising</option>
-                <option value="delivered">Delivered</option>
-              </select>
             </div>
+            <button 
+              className="p-1.5 rounded-md bg-[#2a3347] border border-[#3b4559] text-gray-300 hover:text-white focus:outline-none"
+              aria-label="Advanced filters"
+            >
+              <FiSliders className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
           <button 
             onClick={() => setShowCreateModal(true)}
@@ -314,6 +425,51 @@ export default function ProjectList() {
           >
             <FiPlus className="mr-1.5 -ml-0.5 h-4 w-4" /> New Project
           </button>
+        </div>
+      </div>
+
+      {/* Status filter tabs */}
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`py-1.5 px-3 rounded-md text-sm font-medium transition-colors flex items-center ${
+              statusFilter === 'all'
+                ? 'bg-[#FF4F01] text-white'
+                : 'bg-[#2a3347] text-gray-300 hover:bg-[#3b4559] hover:text-white'
+            }`}
+          >
+            All Projects
+            {statusCounts.all > 0 && (
+              <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-white/20">
+                {statusCounts.all}
+              </span>
+            )}
+          </button>
+          
+          {/* Status buttons with counts */}
+          {(['not_started', 'writing', 'filming', 'editing', 'revising', 'delivered'] as ProjectStatus[]).map(status => {
+            const count = statusCounts[status];
+            if (count === 0) return null; // Don't show statuses with no projects
+            
+            return (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`py-1.5 px-3 rounded-md text-sm font-medium transition-colors flex items-center ${
+                  statusFilter === status
+                    ? 'bg-[#FF4F01] text-white' // Active status
+                    : getStatusDarkStyles(status) // Inactive status with matching color
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${getStatusBadgeColor(status)} mr-2`}></span>
+                {formatStatus(status)}
+                <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-white/20">
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -664,6 +820,10 @@ export default function ProjectList() {
           organization={organizations[selectedProject.organizationId]}
           isOpen={showModal}
           onClose={() => setShowModal(false)}
+          onStatusChange={handleProjectStatusChange}
+          onProjectDelete={handleProjectDelete}
+          onSuccessfulAction={refreshProjects}
+          organizations={Object.values(organizations)}
         />
       )}
 

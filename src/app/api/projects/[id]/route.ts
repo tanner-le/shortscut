@@ -63,6 +63,23 @@ export async function PUT(request: NextRequest) {
       return errorResponse('Project not found', HTTP_STATUS.NOT_FOUND);
     }
     
+    // Validate dates
+    if (data.startDate) {
+      try {
+        new Date(data.startDate);
+      } catch (e) {
+        return errorResponse('Invalid start date format', HTTP_STATUS.BAD_REQUEST);
+      }
+    }
+    
+    if (data.dueDate) {
+      try {
+        new Date(data.dueDate);
+      } catch (e) {
+        return errorResponse('Invalid due date format', HTTP_STATUS.BAD_REQUEST);
+      }
+    }
+    
     // Update project
     const updatedProject = await prisma.project.update({
       where: { id: projectId },

@@ -1,13 +1,18 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { FiX, FiCalendar, FiClock, FiPaperclip, FiSend, FiEdit2, FiTrash2, FiChevronDown, FiCheck, FiMessageSquare, FiAlertTriangle, FiUsers, FiInfo } from 'react-icons/fi';
 import { Project, ProjectStatus } from '@/types/project';
+import EditProjectModal from '@/components/admin/EditProjectModal';
 
 interface ProjectDetailModalProps {
   project: Project;
   organization: any;
   isOpen: boolean;
   onClose: () => void;
+  onStatusChange?: (projectId: string, newStatus: ProjectStatus) => void;
+  onProjectDelete?: (projectId: string) => void;
+  onSuccessfulAction?: () => void;
+  organizations?: any[];
 }
 
 // Sample team members for the project (to be replaced with real data in production)
@@ -79,7 +84,16 @@ const MOCK_MESSAGES = [
   },
 ];
 
-export default function ProjectDetailModal({ project, organization, isOpen, onClose }: ProjectDetailModalProps) {
+export default function ProjectDetailModal({ 
+  project, 
+  organization, 
+  isOpen, 
+  onClose,
+  onStatusChange,
+  onProjectDelete,
+  onSuccessfulAction,
+  organizations = []
+}: ProjectDetailModalProps) {
   const [status, setStatus] = useState<ProjectStatus>(project.status);
   const [messageText, setMessageText] = useState('');
   const [showStatusMenu, setShowStatusMenu] = useState(false);
@@ -87,10 +101,30 @@ export default function ProjectDetailModal({ project, organization, isOpen, onCl
   const [pendingStatus, setPendingStatus] = useState<ProjectStatus | null>(null);
   const [showStatusConfirm, setShowStatusConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'chat'>('details');
+  const [isStatusChanging, setIsStatusChanging] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const statusMenuRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  
+  // Debug useEffect to track changes to showEditModal
+  useEffect(() => {
+    console.log('showEditModal state changed:', showEditModal);
+  }, [showEditModal]);
+  
+  // Reset state when project changes
+  useEffect(() => {
+    if (project) {
+      setStatus(project.status);
+      setError(null);
+    }
+  }, [project]);
 
-  if (!isOpen) return null;
+  if (!isOpen && !showEditModal) {
+    // Neither modal should be shown
+    return null;
+  }
   
   // Function to handle status change
   const handleStatusChange = async (newStatus: ProjectStatus) => {
@@ -105,20 +139,75 @@ export default function ProjectDetailModal({ project, organization, isOpen, onCl
   // Function to confirm status change
   const confirmStatusChange = async () => {
     if (pendingStatus) {
+      setIsStatusChanging(true);
       try {
+        // Perform API call to update the project status
+        const response = await fetch(`/api/projects/${project.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: pendingStatus }),
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || 'Failed to update project status');
+        }
+        
         setStatus(pendingStatus);
-        // In a real implementation, this would update the project in the database
-        // await fetch(`/api/projects/${project.id}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ status: pendingStatus }),
-        // });
+        
+        // Call the onStatusChange callback if provided
+        if (onStatusChange) {
+          onStatusChange(project.id, pendingStatus);
+        }
+        
+        // Call the success callback if provided
+        if (onSuccessfulAction) {
+          onSuccessfulAction();
+        }
       } catch (error) {
         console.error('Failed to update project status:', error);
+        setError(error instanceof Error ? error.message : 'An unknown error occurred');
+      } finally {
+        setIsStatusChanging(false);
       }
     }
     setShowStatusConfirm(false);
     setPendingStatus(null);
+  };
+  
+  // Function to handle project deletion
+  const handleDeleteProject = async () => {
+    setIsDeleting(true);
+    try {
+      // Perform API call to delete the project
+      const response = await fetch(`/api/projects/${project.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to delete project');
+      }
+      
+      // Call the onProjectDelete callback if provided
+      if (onProjectDelete) {
+        onProjectDelete(project.id);
+      }
+      
+      // Close the modal
+      onClose();
+      
+      // Call the success callback if provided
+      if (onSuccessfulAction) {
+        onSuccessfulAction();
+      }
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   // Function to handle message submission
@@ -168,10 +257,10 @@ export default function ProjectDetailModal({ project, organization, isOpen, onCl
   // Project Details Component
   const ProjectDetailsContent = () => (
     <div className="space-y-5">
-      {/* Organization info */}
+      {/* Client info */}
       <div className="bg-[#111827] rounded-xl overflow-hidden border border-gray-700/50 shadow-md">
         <div className="bg-[#151f2e] px-4 py-2.5 border-b border-gray-700/50 flex items-center justify-between">
-          <h3 className="text-sm font-medium text-white">Organization</h3>
+          <h3 className="text-sm font-medium text-white">Client</h3>
           {organization?.plan && (
             <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
               organization.plan === 'studio' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
@@ -301,7 +390,12 @@ export default function ProjectDetailModal({ project, organization, isOpen, onCl
               <div className="pt-3 mt-3 border-t border-gray-700/30 space-y-3">
                 {/* Edit Project Button */}
                 <button 
-                  onClick={() => window.location.href = `/admin/projects/${project.id}/edit`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Edit Project button clicked');
+                    setShowEditModal(true);
+                  }}
                   className="w-full inline-flex items-center justify-center px-3 py-2 border border-blue-700/30 text-sm font-medium rounded-md text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 hover:border-blue-700/50 transition-colors"
                 >
                   <FiEdit2 className="mr-1.5 -ml-0.5 h-4 w-4" />
@@ -321,15 +415,20 @@ export default function ProjectDetailModal({ project, organization, isOpen, onCl
                     </div>
                     <div className="flex items-center space-x-3">
                       <button
-                        className="flex-1 py-2 px-3 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors"
-                        // In a real implementation, this would delete the project
-                        onClick={() => console.log('Delete project:', project.id)}
+                        className={`flex-1 py-2 px-3 ${
+                          isDeleting 
+                            ? 'bg-red-800 cursor-not-allowed' 
+                            : 'bg-red-600 hover:bg-red-700'
+                        } text-white text-sm font-medium rounded-md transition-colors`}
+                        onClick={handleDeleteProject}
+                        disabled={isDeleting}
                       >
-                        Delete
+                        {isDeleting ? 'Deleting...' : 'Delete'}
                       </button>
                       <button
                         className="flex-1 py-2 px-3 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-md transition-colors"
                         onClick={() => setShowDeleteConfirm(false)}
+                        disabled={isDeleting}
                       >
                         Cancel
                       </button>
@@ -449,161 +548,222 @@ export default function ProjectDetailModal({ project, organization, isOpen, onCl
     </div>
   );
 
+  // Handle successful project edit
+  const handleSuccessfulEdit = async () => {
+    // Close the edit modal
+    setShowEditModal(false);
+    
+    // Refresh project data
+    if (onSuccessfulAction) {
+      onSuccessfulAction();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity" 
-           onClick={onClose} 
-           aria-hidden="true" />
-      
-      <div className="relative w-full max-w-6xl mx-auto flex flex-col max-h-[90vh] bg-gradient-to-b from-[#1a2233] to-[#111827] rounded-xl shadow-2xl border border-gray-700/50 overflow-hidden transform transition-all">
-        {/* Header with title and actions */}
-        <div className="px-6 py-4 flex items-center justify-between border-b border-gray-700/50 bg-[#111827]">
-          <h2 className="text-xl font-bold text-white flex items-center">
-            {project.title}
-            
-            {/* Status indicator */}
-            <div className="relative ml-4">
-              <button 
-                onClick={() => setShowStatusMenu(!showStatusMenu)}
-                className="inline-flex items-center px-3 py-1.5 rounded-full border border-gray-700/50 bg-[#151f2e] hover:bg-[#1c273a] transition-colors"
-              >
-                <span className={`w-2.5 h-2.5 rounded-full ${getStatusColor(status)} mr-2`}></span>
-                <span className="text-sm font-medium text-white">{formatStatus(status)}</span>
-                <FiChevronDown className="ml-2 h-4 w-4 text-gray-400" />
-              </button>
-              
-              {/* Status dropdown menu */}
-              {showStatusMenu && (
-                <div 
-                  ref={statusMenuRef}
-                  className="absolute top-full left-0 mt-1 w-56 bg-[#151f2e] rounded-lg shadow-lg border border-gray-700/50 py-1 z-10"
-                >
-                  {(['not_started', 'writing', 'filming', 'editing', 'revising', 'delivered'] as ProjectStatus[]).map((statusOption) => (
-                    <button
-                      key={statusOption}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-700/30 flex items-center ${
-                        status === statusOption ? 'bg-gray-700/20 font-medium' : ''
-                      }`}
-                      onClick={() => handleStatusChange(statusOption)}
+    <>
+      {/* EditProjectModal - Conditionally render based on showEditModal */}
+      {showEditModal && (
+        <EditProjectModal
+          project={project}
+          isOpen={showEditModal}
+          onClose={() => {
+            console.log('EditProjectModal onClose called');
+            setShowEditModal(false);
+          }}
+          onSuccessfulEdit={handleSuccessfulEdit}
+          organizations={Array.isArray(organizations) ? organizations : Object.values(organizations || {})}
+        />
+      )}
+
+      {/* ProjectDetailModal - Conditionally render based on isOpen and !showEditModal */}
+      {isOpen && !showEditModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity" 
+               onClick={onClose} 
+               aria-hidden="true" />
+          
+          <div className="relative w-full max-w-6xl mx-auto flex flex-col max-h-[90vh] bg-gradient-to-b from-[#1a2233] to-[#111827] rounded-xl shadow-2xl border border-gray-700/50 overflow-hidden transform transition-all">
+            {/* Header with title and actions */}
+            <div className="px-6 py-4 flex items-center justify-between border-b border-gray-700/50 bg-[#111827]">
+              <h2 className="text-xl font-bold text-white flex items-center">
+                {project.title}
+                
+                {/* Status indicator */}
+                <div className="relative ml-4">
+                  <button 
+                    onClick={() => setShowStatusMenu(!showStatusMenu)}
+                    className="inline-flex items-center px-3 py-1.5 rounded-full border border-gray-700/50 bg-[#151f2e] hover:bg-[#1c273a] transition-colors"
+                    disabled={isStatusChanging}
+                  >
+                    <span className={`w-2.5 h-2.5 rounded-full ${getStatusColor(status)} mr-2`}></span>
+                    <span className="text-sm font-medium text-white">
+                      {isStatusChanging ? 'Updating...' : formatStatus(status)}
+                    </span>
+                    <FiChevronDown className="ml-2 h-4 w-4 text-gray-400" />
+                  </button>
+                  
+                  {/* Status dropdown menu */}
+                  {showStatusMenu && (
+                    <div 
+                      ref={statusMenuRef}
+                      className="absolute top-full left-0 mt-1 w-56 bg-[#151f2e] rounded-lg shadow-lg border border-gray-700/50 py-1 z-10"
                     >
-                      <span className={`w-2.5 h-2.5 rounded-full ${getStatusColor(statusOption)} mr-2`}></span>
-                      {formatStatus(statusOption)}
-                      {status === statusOption && (
-                        <FiCheck className="ml-auto h-4 w-4 text-blue-400" />
-                      )}
-                    </button>
-                  ))}
+                      {(['not_started', 'writing', 'filming', 'editing', 'revising', 'delivered'] as ProjectStatus[]).map((statusOption) => (
+                        <button
+                          key={statusOption}
+                          className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-700/30 flex items-center ${
+                            status === statusOption ? 'bg-gray-700/20 font-medium' : ''
+                          }`}
+                          onClick={() => handleStatusChange(statusOption)}
+                        >
+                          <span className={`w-2.5 h-2.5 rounded-full ${getStatusColor(statusOption)} mr-2`}></span>
+                          {formatStatus(statusOption)}
+                          {status === statusOption && (
+                            <FiCheck className="ml-auto h-4 w-4 text-blue-400" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </h2>
-          
-          {/* Action buttons in header */}
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
-              aria-label="Close modal"
-            >
-              <FiX className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile tabs - only visible on small screens */}
-        <div className="lg:hidden flex border-b border-gray-700/50 bg-[#151f2e]">
-          <button
-            className={`relative flex-1 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'details'
-                ? 'text-white'
-                : 'text-gray-400 hover:text-gray-200'
-            }`}
-            onClick={() => setActiveTab('details')}
-          >
-            <span className="flex items-center justify-center">
-              <FiInfo className="mr-1.5 h-4 w-4" />
-              Project Details
-            </span>
-            {activeTab === 'details' && (
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500"></span>
-            )}
-          </button>
-          <button
-            className={`relative flex-1 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'chat'
-                ? 'text-white'
-                : 'text-gray-400 hover:text-gray-200'
-            }`}
-            onClick={() => setActiveTab('chat')}
-          >
-            <span className="flex items-center justify-center">
-              <FiMessageSquare className="mr-1.5 h-4 w-4" />
-              Chat
-            </span>
-            {activeTab === 'chat' && (
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500"></span>
-            )}
-          </button>
-        </div>
-
-        {/* Main content - Responsive layout with tabs for mobile and side-by-side for desktop */}
-        <div className="flex-grow overflow-hidden flex flex-col lg:flex-row">
-          {/* Project details section */}
-          <div className={`
-            ${activeTab === 'details' ? 'block' : 'hidden'}
-            lg:block lg:w-3/4 overflow-auto p-6
-          `}>
-            <ProjectDetailsContent />
-          </div>
-          
-          {/* Chat section */}
-          <div className={`
-            ${activeTab === 'chat' ? 'flex' : 'hidden'} 
-            lg:flex lg:w-1/4 lg:border-l border-gray-700/50 flex-col h-full bg-[#111827]
-          `}>
-            <ChatContent />
-          </div>
-        </div>
-        
-        {/* Status change confirmation dialog */}
-        {showStatusConfirm && pendingStatus && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
-            <div className="bg-[#1a2233] rounded-lg shadow-lg border border-gray-700/50 p-5 max-w-sm w-full">
-              <h3 className="text-lg font-medium text-white mb-3">Change Project Status</h3>
-              <p className="text-gray-300 mb-4">
-                Are you sure you want to change the project status from <span className="font-medium text-white">{formatStatus(status)}</span> to <span className="font-medium text-white">{formatStatus(pendingStatus)}</span>?
-              </p>
-              <div className="flex justify-end space-x-3">
+              </h2>
+              
+              {/* Action buttons in header */}
+              <div className="flex items-center space-x-2">
+                {/* Direct button to test edit modal (for debugging) */}
                 <button
                   onClick={() => {
-                    setShowStatusConfirm(false);
-                    setPendingStatus(null);
+                    console.log('Direct edit button clicked');
+                    setShowEditModal(true);
                   }}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-md transition-colors"
+                  className="p-1.5 rounded-full text-blue-400 hover:text-white hover:bg-blue-700/50 transition-colors"
+                  aria-label="Edit project"
                 >
-                  Cancel
+                  <FiEdit2 className="h-5 w-5" />
                 </button>
+
                 <button
-                  onClick={confirmStatusChange}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+                  onClick={onClose}
+                  className="p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
+                  aria-label="Close modal"
                 >
-                  Confirm
+                  <FiX className="h-5 w-5" />
                 </button>
               </div>
             </div>
+
+            {/* Display error message if there is one */}
+            {error && (
+              <div className="mx-6 mt-4 p-3 bg-red-900/20 border border-red-700/30 rounded-lg">
+                <div className="flex items-start">
+                  <FiAlertTriangle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-300">{error}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Mobile tabs - only visible on small screens */}
+            <div className="lg:hidden flex border-b border-gray-700/50 bg-[#151f2e]">
+              <button
+                className={`relative flex-1 py-3 text-sm font-medium transition-colors ${
+                  activeTab === 'details'
+                    ? 'text-white'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+                onClick={() => setActiveTab('details')}
+              >
+                <span className="flex items-center justify-center">
+                  <FiInfo className="mr-1.5 h-4 w-4" />
+                  Project Details
+                </span>
+                {activeTab === 'details' && (
+                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500"></span>
+                )}
+              </button>
+              <button
+                className={`relative flex-1 py-3 text-sm font-medium transition-colors ${
+                  activeTab === 'chat'
+                    ? 'text-white'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+                onClick={() => setActiveTab('chat')}
+              >
+                <span className="flex items-center justify-center">
+                  <FiMessageSquare className="mr-1.5 h-4 w-4" />
+                  Chat
+                </span>
+                {activeTab === 'chat' && (
+                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500"></span>
+                )}
+              </button>
+            </div>
+
+            {/* Main content - Responsive layout with tabs for mobile and side-by-side for desktop */}
+            <div className="flex-grow overflow-hidden flex flex-col lg:flex-row">
+              {/* Project details section */}
+              <div className={`
+                ${activeTab === 'details' ? 'block' : 'hidden'}
+                lg:block lg:w-3/4 overflow-auto p-6
+              `}>
+                <ProjectDetailsContent />
+              </div>
+              
+              {/* Chat section */}
+              <div className={`
+                ${activeTab === 'chat' ? 'flex' : 'hidden'} 
+                lg:flex lg:w-1/4 lg:border-l border-gray-700/50 flex-col h-full bg-[#111827]
+              `}>
+                <ChatContent />
+              </div>
+            </div>
+            
+            {/* Status change confirmation dialog */}
+            {showStatusConfirm && pendingStatus && (
+              <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
+                <div className="bg-[#1a2233] rounded-lg shadow-lg border border-gray-700/50 p-5 max-w-sm w-full">
+                  <h3 className="text-lg font-medium text-white mb-3">Change Project Status</h3>
+                  <p className="text-gray-300 mb-4">
+                    Are you sure you want to change the project status from <span className="font-medium text-white">{formatStatus(status)}</span> to <span className="font-medium text-white">{formatStatus(pendingStatus)}</span>?
+                  </p>
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      onClick={() => {
+                        setShowStatusConfirm(false);
+                        setPendingStatus(null);
+                      }}
+                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-md transition-colors"
+                      disabled={isStatusChanging}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={confirmStatusChange}
+                      className={`px-4 py-2 ${
+                        isStatusChanging 
+                          ? 'bg-blue-700/70 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700'
+                      } text-white text-sm font-medium rounded-md transition-colors`}
+                      disabled={isStatusChanging}
+                    >
+                      {isStatusChanging ? 'Updating...' : 'Confirm'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Close button at bottom - only visible on mobile */}
+            <div className="lg:hidden bg-[#111827] px-6 py-4 border-t border-gray-700/50 flex justify-end">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-md transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
-        )}
-        
-        {/* Close button at bottom - only visible on mobile */}
-        <div className="lg:hidden bg-[#111827] px-6 py-4 border-t border-gray-700/50 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-md transition-colors"
-          >
-            Close
-          </button>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
-} 
+}
